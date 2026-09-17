@@ -1,0 +1,2170 @@
+/* =========================================================
+   TAZ COMPANY / TAZ DIAGNOSTIC — CORE STYLESHEET
+   Medical Maroon (#5B0A1A) Design System
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: Inter, Segoe UI, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  color: #2d1118;
+  background: #f8f6f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app {
+  min-height: 100vh;
+  background: #f8f6f7;
+}
+
+/* =========================================================
+   SIDEBAR & NAVIGATION
+   ========================================================= */
+
+.sidebar {
+  width: 250px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  background: linear-gradient(180deg, #3a0610, #65091d);
+  box-shadow: 5px 0 20px rgba(40, 0, 10, 0.15);
+}
+
+.brand {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.brandmark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fff;
+  color: #5b0a1a;
+  display: grid;
+  place-items: center;
+}
+
+.brandmark svg {
+  width: 28px;
+}
+
+.brand strong {
+  display: block;
+  font-size: 19px;
+  letter-spacing: 0.5px;
+}
+
+.brand small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #e9c5ce;
+}
+
+.menutitle {
+  padding: 22px 20px 9px;
+  color: #e5bdc7;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.sidebar nav {
+  padding: 0 10px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.25) transparent;
+}
+
+.sidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 99px;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.navitem {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #f7e9ed;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  margin: 2px 0;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.navitem svg {
+  width: 18px;
+}
+
+.navitem:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.navitem.active {
+  background: linear-gradient(135deg, #9b1e38, #7a1228);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: inset 4px 0 0 #fff, 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.sidebottom {
+  margin-top: auto;
+  padding: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #5b0a1a;
+  font-weight: 800;
+}
+
+.profile b {
+  font-size: 12px;
+}
+
+.profile small {
+  display: block;
+  color: #dcbac3;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+.logout {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.15s ease;
+}
+
+.logout:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================================
+   MAIN LAYOUT & TOPBAR
+   ========================================================= */
+
+.main {
+  margin-left: 250px;
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 70px;
+  background: #fff;
+  border-bottom: 1px solid #eadde1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.crumb {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.crumb span {
+  color: #9b858d;
+}
+
+.topuser {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.topuser b {
+  font-size: 12px;
+}
+
+.topuser small {
+  display: block;
+  color: #9b858d;
+  font-size: 9px;
+}
+
+.content {
+  padding: 28px;
+  max-width: 1550px;
+  margin: auto;
+}
+
+.pagehead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 23px;
+  gap: 20px;
+}
+
+.pagehead h1 {
+  margin: 0;
+  color: #350913;
+  font-size: 27px;
+}
+
+.pagehead p {
+  margin: 6px 0 0;
+  color: #836f77;
+  font-size: 13px;
+}
+
+.headactions {
+  display: flex;
+  gap: 9px;
+}
+
+/* =========================================================
+   BUTTONS, BADGES, TABS
+   ========================================================= */
+
+.btn {
+  border: 1px solid #dccdd2;
+  background: #fff;
+  color: #4b2630;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: #fbf5f7;
+  border-color: #baa2aa;
+}
+
+.btn.primary {
+  background: #5b0a1a;
+  border-color: #5b0a1a;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #3a0610;
+  border-color: #3a0610;
+}
+
+.btn.danger {
+  color: #a32727;
+  border-color: #efcaca;
+}
+
+.btn.danger:hover {
+  background: #fdeaea;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  border: 1px solid #dcced3;
+  background: #fff;
+  color: #58434b;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab:hover {
+  background: #faedf1;
+  color: #5b0a1a;
+}
+
+.tab.active {
+  background: #5b0a1a;
+  color: #fff;
+  border-color: #5b0a1a;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  background: #eee9eb;
+  color: #65545b;
+}
+
+.badge.active,
+.badge.completed,
+.badge.paid,
+.badge.sent {
+  background: #e4f5ec;
+  color: #16764f;
+}
+
+.badge.pending,
+.badge.partial {
+  background: #fff1d5;
+  color: #9a620c;
+}
+
+.badge.inactive {
+  background: #fce7e7;
+  color: #a12929;
+}
+
+/* =========================================================
+   CARDS, STATS & GRIDS
+   ========================================================= */
+
+.card {
+  background: #fff;
+  border: 1px solid #eadde1;
+  border-radius: 13px;
+  padding: 19px;
+  box-shadow: 0 4px 15px rgba(70, 8, 20, 0.04);
+}
+
+.cardhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.cardhead h3 {
+  margin: 0;
+  color: #420c19;
+  font-size: 15px;
+}
+
+.cardhead p {
+  margin: 5px 0 0;
+  color: #95828a;
+  font-size: 10px;
+}
+
+.cardhead > svg {
+  color: #7d1230;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 13px;
+  margin-bottom: 18px;
+}
+
+.stats.mini {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.stat {
+  background: #fff;
+  border: 1px solid #eadde1;
+  border-radius: 12px;
+  padding: 17px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(70, 8, 20, 0.04);
+  transition: transform 0.15s ease;
+}
+
+.stat:hover {
+  transform: translateY(-2px);
+}
+
+.staticon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f8e6eb;
+  color: #7d1230;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.staticon svg {
+  width: 20px;
+}
+
+.stat span {
+  display: block;
+  color: #89747c;
+  font-size: 11px;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 5px;
+  color: #330914;
+  font-size: 22px;
+}
+
+.stat small {
+  display: block;
+  margin-top: 3px;
+  color: #16805a;
+  font-size: 9px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.bars {
+  height: 230px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 15px 10px 0;
+  border-bottom: 1px solid #eee5e8;
+}
+
+.barcol {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bar {
+  width: 45px;
+  max-width: 80%;
+  background: linear-gradient(#8b1730, #5b0a1a);
+  border-radius: 6px 6px 0 0;
+}
+
+.barcol small {
+  color: #96838a;
+  font-size: 9px;
+}
+
+.quickgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.quick {
+  border: 1px solid #eadde1;
+  background: #fffafa;
+  border-radius: 9px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #4a1c27;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick:hover {
+  background: #fdf3f5;
+  border-color: #d8b8c2;
+}
+
+.quick svg {
+  color: #7d1230;
+  flex: none;
+}
+
+/* =========================================================
+   TABLES & TOOLBARS
+   ========================================================= */
+
+.tablewrap {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 11px;
+  border-bottom: 1px solid #e9dfe2;
+  color: #927d85;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 13px 11px;
+  border-bottom: 1px solid #f1eaec;
+  color: #4a363d;
+  font-size: 11px;
+}
+
+td b {
+  color: #3a101b;
+}
+
+td small {
+  display: block;
+  color: #a08d94;
+  font-size: 8px;
+  margin-top: 3px;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+.actions button {
+  border: 0;
+  background: transparent;
+  color: #765f67;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actions button:hover {
+  background: #faedf1;
+  color: #5b0a1a;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.search {
+  flex: 1;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ddcfd4;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 11px;
+}
+
+.search svg {
+  color: #9b858d;
+}
+
+.search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 11px 0;
+}
+
+.smallselect {
+  border: 1px solid #ddcfd4;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+/* =========================================================
+   FORMS & INPUTS
+   ========================================================= */
+
+.formcard {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sectiontitle {
+  display: flex;
+  gap: 11px;
+  margin-bottom: 20px;
+}
+
+.sectiontitle > svg {
+  color: #7d1230;
+}
+
+.sectiontitle h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #400c18;
+}
+
+.sectiontitle p {
+  margin: 4px 0 0;
+  color: #8c7980;
+  font-size: 11px;
+}
+
+.formgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.field label {
+  display: block;
+  color: #5e4750;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid #dcced3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 11px 12px;
+  outline: 0;
+  color: #38242b;
+  transition: all 0.15s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #8b1730;
+  box-shadow: 0 0 0 3px rgba(139, 23, 48, 0.08);
+}
+
+.field input:disabled {
+  background: #f5f1f2;
+  color: #8f7d84;
+}
+
+.formactions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.selectbox {
+  height: 42px;
+  border: 1px solid #dcced3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.selectbox span {
+  flex: 1;
+  color: #423039;
+  font-size: 12px;
+}
+
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 68px;
+  background: #fff;
+  border: 1px solid #eadde1;
+  border-radius: 9px;
+  box-shadow: 0 18px 35px rgba(40, 5, 15, 0.18);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropsearch {
+  display: flex;
+  gap: 7px;
+  padding: 9px;
+  border-bottom: 1px solid #eee6e8;
+}
+
+.dropsearch input {
+  border: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.dropitem {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropitem:hover {
+  background: #fff0f3;
+}
+
+.dropitem span {
+  color: #98858c;
+  font-size: 9px;
+}
+
+.emptydrop {
+  padding: 16px;
+  text-align: center;
+  color: #98858c;
+  font-size: 11px;
+}
+
+.notice {
+  padding: 12px;
+  border-radius: 8px;
+  background: #fbf3f5;
+  color: #715a63;
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 15px;
+}
+
+.success {
+  margin-top: 14px;
+  background: #e8f7ef;
+  color: #15734d;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 11px;
+}
+
+.error {
+  margin-top: 14px;
+  background: #fdeaea;
+  color: #a12727;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 11px;
+}
+
+/* =========================================================
+   MODALS
+   ========================================================= */
+
+.modalshade {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(35, 4, 12, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modal {
+  width: min(700px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.modalhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modalhead h3 {
+  margin: 0;
+  color: #400c18;
+}
+
+.close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #f6edef;
+  color: #5b0a1a;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: #ebd4db;
+}
+
+.reportmeta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.reportmeta div {
+  background: #fff;
+  border: 1px solid #eadde1;
+  border-radius: 10px;
+  padding: 13px;
+}
+
+.reportmeta b {
+  display: block;
+  color: #8f7c84;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.reportmeta span {
+  display: block;
+  margin-top: 5px;
+  color: #400c18;
+  font-weight: 800;
+}
+
+/* =========================================================
+   MISCELLANEOUS COMPONENTS
+   ========================================================= */
+
+.metricbar {
+  margin: 18px 0;
+}
+
+.metricbar > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.track {
+  height: 8px;
+  background: #eee6e9;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.track i {
+  display: block;
+  height: 100%;
+  background: #8b1730;
+  border-radius: 20px;
+}
+
+.branchgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.branchicon {
+  width: 43px;
+  height: 43px;
+  border-radius: 10px;
+  background: #f8e6eb;
+  color: #7d1230;
+  display: grid;
+  place-items: center;
+}
+
+.branch h3 {
+  margin: 13px 0 5px;
+}
+
+.branch p {
+  font-size: 11px;
+  color: #88757d;
+  margin: 5px 0;
+}
+
+.cardactions {
+  margin-top: 15px;
+}
+
+.summaryrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 3px;
+  border-bottom: 1px solid #eee6e8;
+  font-size: 11px;
+}
+
+.summaryrow svg {
+  color: #7d1230;
+}
+
+.summaryrow span {
+  flex: 1;
+}
+
+/* =========================================================
+   LOGIN PANEL
+   ========================================================= */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #3a0610, #750b22);
+}
+
+.loginpanel {
+  width: min(900px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 42% 58%;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+}
+
+.loginbrand {
+  padding: 50px;
+  color: #fff;
+  background: linear-gradient(160deg, #3a0610, #750b22);
+}
+
+.loginbrand h1 {
+  font-size: 31px;
+  margin-top: 25px;
+}
+
+.loginbrand p {
+  color: #e6c6ce;
+}
+
+.loginform {
+  padding: 50px;
+}
+
+.loginform h2 {
+  margin: 0;
+  color: #3a0610;
+  font-size: 27px;
+}
+
+.loginform > p {
+  color: #8b777f;
+  font-size: 12px;
+  margin-bottom: 25px;
+}
+
+.loginform > .btn {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.hint {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #faf2f4;
+  color: #735c65;
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.mobile-menu,
+.mobile-x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: none;
+}
+
+/* =========================================================
+   TOASTS, CHIPS & RECEIPT
+   ========================================================= */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #147344;
+  color: #fff;
+  padding: 13px 22px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 3000;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast.info {
+  background: #5b0a1a;
+}
+
+.role-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.role-chip {
+  border: 1px dashed #5b0a1a;
+  background: #faedf1;
+  color: #5b0a1a;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.role-chip:hover {
+  background: #5b0a1a;
+  color: #fff;
+}
+
+.receipt-box {
+  border: 2px dashed #eadde1;
+  padding: 20px;
+  border-radius: 10px;
+  background: #fffafb;
+  margin: 15px 0;
+}
+
+.receipt-header {
+  text-align: center;
+  border-bottom: 1px solid #eadde1;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #f2e9ec;
+}
+
+/* =========================================================
+   A4 SHEET REPORT PREVIEW & PRINT ENGINE
+   ========================================================= */
+
+/* On-screen workbench preview for A4 document */
+.card.report-print {
+  background: #ece7ea;
+  padding: 32px 20px;
+  border-radius: 14px;
+  border: 1px solid #daccd2;
+  box-shadow: inset 0 2px 8px rgba(50, 10, 20, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.a4-toolbar {
+  width: 210mm;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 10px 18px;
+  background: #ffffff;
+  border-radius: 9px;
+  border: 1px solid #dcccd2;
+  box-shadow: 0 2px 8px rgba(60, 10, 20, 0.05);
+}
+
+.a4-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: #5b0a1a;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+}
+
+/* The A4 Document Container */
+.paper {
+  width: 210mm;
+  min-height: 297mm;
+  max-width: 100%;
+  background: #ffffff;
+  padding: 14mm 14mm 12mm 14mm;
+  margin: 0 auto;
+  box-shadow: 0 10px 35px rgba(45, 10, 20, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid #daccd1;
+  border-radius: 2px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Header */
+.paper-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 2.5px solid #5b0a1a;
+}
+
+.paper-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5b0a1a;
+}
+
+.logo-symbol {
+  width: 50px;
+  height: 50px;
+  border: 2.5px solid #5b0a1a;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 900;
+  background: #faf4f6;
+  color: #5b0a1a;
+}
+
+.paper-logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.paper-brand-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.paper-logo b {
+  display: inline-block;
+  font-size: 25px;
+  line-height: 1.1;
+  letter-spacing: 0.8px;
+}
+
+.paper-logo strong {
+  display: inline-block;
+  font-size: 25px;
+  letter-spacing: 1.6px;
+  line-height: 1.1;
+  color: #5b0a1a;
+}
+
+.paper-logo small {
+  display: block;
+  font-size: 8.5px;
+  color: #806d75;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  font-weight: 700;
+}
+
+.qr-box {
+  width: 68px;
+  height: 68px;
+  border: 2px solid #5b0a1a;
+  border-radius: 6px;
+  background: #faf4f6;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+}
+
+.qr-badge {
+  font-size: 8px;
+  font-weight: 800;
+  color: #5b0a1a;
+  letter-spacing: 0.6px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Report Banner Title */
+.paper h1 {
+  text-align: center;
+  background: #5b0a1a;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin: 12px 0;
+  font-weight: 800;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Patient Demographic Information */
+.patient-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #dbc8ce;
+  border-radius: 6px;
+  background: #fdfafb;
+  padding: 10px 14px;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.patient-box > div > div {
+  font-size: 10px;
+  line-height: 20px;
+  color: #3b242c;
+}
+
+.patient-box b {
+  display: inline-block;
+  width: 95px;
+  color: #705861;
+  font-weight: 600;
+}
+
+.patient-box em {
+  color: #8b1730;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* Test Results Table */
+.report-section {
+  margin-top: 4px;
+  flex: 1;
+}
+
+.report-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.report-section h3 {
+  display: inline-block;
+  background: #5b0a1a;
+  color: #ffffff;
+  padding: 6px 14px;
+  margin: 0;
+  border-radius: 4px 4px 0 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.report-section table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d9c8ce;
+}
+
+.report-section table th {
+  background: #f6edf0;
+  color: #4c1421;
+  border: 1px solid #d7c5cb;
+  padding: 7px 9px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.report-section table td {
+  border: 1px solid #e1d3d8;
+  padding: 7px 9px;
+  font-size: 9.5px;
+  color: #38242b;
+}
+
+.report-section table tr:nth-child(even) td {
+  background: #fcf9fa;
+}
+
+.paper .notice {
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: #faf2f4;
+  color: #69525c;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: 10px;
+  border-left: 3px solid #8b1730;
+}
+
+/* Signatures: Pathologist on Left, Doctor on Right */
+.signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 24px;
+  padding-top: 6px;
+}
+
+.signature {
+  text-align: center;
+}
+
+.signature i {
+  display: block;
+  font-style: normal;
+  margin-bottom: 6px;
+  color: #8c767e;
+}
+
+.signature b {
+  display: block;
+  font-size: 11px;
+  color: #380a15;
+}
+
+.signature span {
+  display: block;
+  font-size: 9px;
+  color: #7b666f;
+  margin-top: 2px;
+}
+
+/* Paper Footer */
+.paper footer {
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #d9c8ce;
+  color: #836e76;
+  font-size: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* On screen container for multiple A4 sheets */
+.report-sheets-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.sheet-page-tag {
+  width: 210mm;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 14px;
+  background: #4a0c18;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: -16px;
+  z-index: 2;
+}
+
+.sheet-page-tag span {
+  background: rgba(255, 255, 255, 0.22);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.dept-banner {
+  margin: 6px 0 10px 0;
+  text-align: center;
+}
+
+.dept-banner h1 {
+  text-align: center;
+  background: #5b0a1a;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin: 0;
+  font-weight: 800;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.dept-sub {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #6b1426;
+  letter-spacing: 1.2px;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+
+.write-in-dots {
+  color: #666666;
+  letter-spacing: 2px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-block;
+  text-align: center;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Multi-Department A4 Report Sheets: Full Page Edit with Font Size 14 & Centered Columns */
+.paper.report-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  height: 297mm;
+  max-width: 100%;
+  padding: 6mm 10mm 6mm 10mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 10px 35px rgba(45, 10, 20, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid #daccd1;
+  border-radius: 2px;
+}
+
+.paper.report-sheet .paper-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #5b0a1a;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .paper-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paper.report-sheet .logo-symbol {
+  width: 72px;
+  height: 72px;
+  font-size: 0;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.paper.report-sheet .paper-brand-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+  justify-content: center;
+}
+
+.paper.report-sheet .paper-logo b {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #380a15;
+  letter-spacing: 1px;
+}
+
+.paper.report-sheet .paper-logo strong {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #5b0a1a;
+  letter-spacing: 2.2px;
+}
+
+.paper.report-sheet .paper-logo small {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  margin-top: 3px;
+  color: #806d75;
+  display: block;
+  text-align: center;
+}
+
+.paper.report-sheet .qr-box {
+  width: 44px;
+  height: 44px;
+}
+
+.paper.report-sheet .qr-box svg {
+  width: 34px;
+  height: 34px;
+}
+
+.paper.report-sheet .dept-banner {
+  margin: 3px 0 4px 0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .dept-banner h1 {
+  text-align: center;
+  background: #5b0a1a;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  margin: 0;
+  font-weight: 800;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.paper.report-sheet .dept-sub {
+  font-size: 8px;
+  font-weight: 800;
+  color: #6b1426;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.paper.report-sheet .patient-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #dbc8ce;
+  border-radius: 4px;
+  background: #fdfafb;
+  padding: 4px 10px;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .patient-box > div > div {
+  font-size: 9.5px;
+  line-height: 15px;
+  color: #3b242c;
+}
+
+.paper.report-sheet .patient-box b {
+  display: inline-block;
+  width: 85px;
+  color: #705861;
+  font-weight: 600;
+}
+
+.paper.report-sheet .report-section {
+  margin: 2px 0 3px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.paper.report-sheet .report-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .report-section h3 {
+  display: inline-block;
+  background: #5b0a1a;
+  color: #ffffff;
+  padding: 3px 10px;
+  margin: 0;
+  border-radius: 4px 4px 0 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.paper.report-sheet .report-section table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d9c8ce;
+  table-layout: fixed;
+}
+
+.paper.report-sheet .report-section table th {
+  background: #f6edf0;
+  color: #4c1421;
+  border: 1px solid #d7c5cb;
+  padding: 5px 6px;
+  font-size: 13.5px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.paper.report-sheet .report-section table th:first-child {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.paper.report-sheet .report-section table td {
+  border: 1px solid #e1d3d8;
+  padding: 5px 6px;
+  font-size: 14px;
+  color: #222222;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.25;
+}
+
+.paper.report-sheet .report-section table td:first-child {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.paper.report-sheet .report-section table tr:nth-child(even) td {
+  background: #fcf9fa;
+}
+
+.paper.report-sheet .report-section table td strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.paper.report-sheet .report-section table td b {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000000;
+}
+
+.paper.report-sheet .report-section table .badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1.5px 7px;
+  border-radius: 10px;
+  display: inline-block;
+  text-align: center;
+}
+
+.paper.report-sheet .report-bottom {
+  margin-top: auto;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.paper.report-sheet .notice {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #faf2f4;
+  color: #55444d;
+  font-size: 8px;
+  line-height: 1.3;
+  margin-top: 3px;
+  border-left: 3px solid #8b1730;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 4px;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.paper.report-sheet .signature {
+  text-align: center;
+}
+
+.paper.report-sheet .signature i {
+  display: block;
+  font-style: normal;
+  margin-bottom: 2px;
+  color: #666666;
+  font-size: 8.5px;
+}
+
+.paper.report-sheet .signature b {
+  display: block;
+  font-size: 10.5px;
+  color: #2b0811;
+  font-weight: 800;
+}
+
+.paper.report-sheet .signature span {
+  display: block;
+  font-size: 8px;
+  color: #66555d;
+  margin-top: 1px;
+}
+
+.paper.report-sheet footer {
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid #d9c8ce;
+  color: #77666e;
+  font-size: 7.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   EXACT A4 MULTI-PAGE PRINT MEDIA (1 GROUP PER SEPARATE A4 PAGE)
+   ========================================================= */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  .sidebar, .topbar, .pagehead, .reportmeta, .tabs, .toolbar, .formcard, .card:not(.report-print), .no-print, .a4-toolbar, .toast, .sheet-page-tag {
+    display: none !important;
+  }
+
+  .app, .main, .content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    height: auto !important;
+    min-height: auto !important;
+    background: transparent !important;
+  }
+
+  .card.report-print {
+    display: block !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .report-sheets-container {
+    display: block !important;
+    gap: 0 !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .paper.report-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    padding: 8mm 12mm 8mm 12mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .paper.report-sheet:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Full Color Xerox and Print Rendering */
+  .paper.report-sheet .paper-head {
+    border-bottom: 2px solid #5b0a1a !important;
+  }
+
+  .paper.report-sheet .logo-symbol {
+    border: 2.5px solid #5b0a1a !important;
+    color: #5b0a1a !important;
+    background: #faf4f6 !important;
+  }
+
+  .paper.report-sheet .paper-brand-title b {
+    color: #380a15 !important;
+  }
+
+  .paper.report-sheet .paper-brand-title strong {
+    color: #5b0a1a !important;
+  }
+
+  .paper.report-sheet .qr-box {
+    border: 2px solid #5b0a1a !important;
+    background: #faf4f6 !important;
+  }
+
+  .paper.report-sheet .dept-banner h1 {
+    background: #5b0a1a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .dept-sub {
+    color: #6b1426 !important;
+  }
+
+  .paper.report-sheet .patient-box {
+    border: 1px solid #dbc8ce !important;
+    background: #fdfafb !important;
+    color: #2d1118 !important;
+  }
+
+  .paper.report-sheet .patient-box b {
+    color: #5b0a1a !important;
+  }
+
+  .paper.report-sheet .patient-box strong {
+    color: #111111 !important;
+  }
+
+  .paper.report-sheet .patient-box em {
+    color: #8b1730 !important;
+  }
+
+  .paper.report-sheet .report-section-head h3 {
+    background: #5b0a1a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Report section: does NOT stretch — table is compact, footer anchors bottom via parent flex space-between */
+  .paper.report-sheet .report-section {
+    flex: 0 0 auto !important;
+  }
+
+  .paper.report-sheet .report-section table {
+    border: 1px solid #d9c8ce !important;
+    width: 100% !important;
+  }
+
+  .paper.report-sheet .dept-banner h1 {
+    background: #5b0a1a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .dept-sub {
+    color: #6b1426 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-section-head h3 {
+    background: #5b0a1a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .patient-box {
+    background: #fdfafb !important;
+    border: 1px solid #dbc8ce !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-section table th {
+    background: #f6edf0 !important;
+    color: #4c1421 !important;
+    border: 1px solid #d7c5cb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-section table td {
+    border: 1px solid #e1d3d8 !important;
+    color: #222222 !important;
+  }
+
+  .paper.report-sheet .report-section table tr:nth-child(even) td {
+    background: #fcf9fa !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-section table .badge.completed {
+    background: #e4f5ec !important;
+    color: #16764f !important;
+    border: 1px solid #bce6d0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-section table .badge.pending {
+    background: #fff1d5 !important;
+    color: #9a620c !important;
+    border: 1px solid #f6deb2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .notice {
+    background: #faf2f4 !important;
+    color: #55444d !important;
+    border-left: 3px solid #8b1730 !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper.report-sheet .report-bottom {
+    margin-top: auto !important;
+  }
+
+  .paper.report-sheet .signatures {
+    border-top: 1px solid #dbc8ce !important;
+  }
+
+  .paper.report-sheet footer {
+    border-top: 1px solid #dbc8ce !important;
+    color: #8b777f !important;
+  }
+
+  /* Hide the wrapper div around each sheet — only the paper itself prints */
+  .report-sheets-container > div {
+    display: contents !important;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE BREAKPOINTS (SCREEN ONLY)
+   ========================================================= */
+
+@media (max-width: 1250px) {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .branchgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 850px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: 0.2s;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .main {
+    margin-left: 0;
+  }
+  .mobile-menu,
+  .mobile-x {
+    display: grid;
+    place-items: center;
+  }
+  .mobile-x {
+    margin-left: auto;
+    color: #fff;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+  .content {
+    padding: 20px 15px;
+  }
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .formgrid {
+    grid-template-columns: 1fr;
+  }
+  .stats,
+  .stats.mini {
+    grid-template-columns: 1fr 1fr;
+  }
+  .reportmeta {
+    grid-template-columns: 1fr 1fr;
+  }
+  .loginpanel {
+    grid-template-columns: 1fr;
+  }
+  .loginbrand {
+    display: none;
+  }
+}
+
+@media (max-width: 550px) {
+  .stats,
+  .stats.mini,
+  .branchgrid,
+  .reportmeta {
+    grid-template-columns: 1fr;
+  }
+  .pagehead {
+    flex-direction: column;
+  }
+  .headactions {
+    width: 100%;
+  }
+  .headactions .btn {
+    flex: 1;
+  }
+  .patient-box {
+    grid-template-columns: 1fr;
+  }
+  .signatures {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+

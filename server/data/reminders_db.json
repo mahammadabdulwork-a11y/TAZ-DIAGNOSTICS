@@ -1,0 +1,107 @@
+{
+  "settings": {
+    "phoneNumberId": "",
+    "businessAccountId": "",
+    "accessToken": "",
+    "templateName": "taz_monthly_retest_reminder",
+    "templateLanguage": "en",
+    "webhookVerifyToken": "taz_diagnostic_webhook_secure_token",
+    "testMode": true,
+    "dailyCronTime": "0 9 * * *",
+    "isActive": true,
+    "updatedAt": "2026-09-12T10:42:37.469Z"
+  },
+  "consents": [
+    {
+      "patientId": "PAT001",
+      "optIn": true,
+      "consentTimestamp": "2026-09-12T10:42:37.469Z",
+      "channel": "WhatsApp",
+      "notes": "Opted in during registration"
+    },
+    {
+      "patientId": "PAT002",
+      "optIn": true,
+      "consentTimestamp": "2026-09-12T10:42:37.470Z",
+      "channel": "WhatsApp",
+      "notes": "Opted in during registration"
+    },
+    {
+      "patientId": "PAT003",
+      "optIn": false,
+      "consentTimestamp": "2026-09-12T10:42:37.470Z",
+      "optOutTimestamp": "2026-09-12T10:42:37.470Z",
+      "channel": "WhatsApp",
+      "notes": "Patient requested opt-out"
+    }
+  ],
+  "reminders": [
+    {
+      "id": "REM-PAT001-01",
+      "patientId": "PAT001",
+      "patientName": "Mohammed Irfan",
+      "phone": "+919876543210",
+      "previousReportId": "REP001",
+      "previousTestDate": "2026-09-12",
+      "nextReminderDate": "2026-10-12",
+      "testList": "Complete Blood Picture (CBP), Urine Routine, Blood Sugar Fasting, Liver Function Test (LFT)",
+      "status": "SCHEDULED",
+      "optIn": true,
+      "cycleMonth": "2026-10",
+      "sentAt": null,
+      "deliveredAt": null,
+      "readAt": null,
+      "failedAt": null,
+      "failureReason": null,
+      "whatsappMessageId": null,
+      "retryCount": 0,
+      "createdAt": "2026-09-12T10:42:37.470Z",
+      "updatedAt": "2026-09-12T10:42:37.470Z"
+    },
+    {
+      "id": "REM-PAT002-01",
+      "patientId": "PAT002",
+      "patientName": "Ayesha Khan",
+      "phone": "+919988776655",
+      "previousReportId": "REP002",
+      "previousTestDate": "2026-08-12",
+      "nextReminderDate": "2026-09-12",
+      "testList": "Haemoglobin (Hb), Blood Sugar Fasting, Serum Creatinine",
+      "status": "DUE TODAY",
+      "optIn": true,
+      "cycleMonth": "2026-09",
+      "sentAt": null,
+      "deliveredAt": null,
+      "readAt": null,
+      "failedAt": null,
+      "failureReason": null,
+      "whatsappMessageId": null,
+      "retryCount": 0,
+      "createdAt": "2026-09-12T10:42:37.470Z",
+      "updatedAt": "2026-09-12T10:42:37.470Z"
+    },
+    {
+      "id": "REM-PAT003-01",
+      "patientId": "PAT003",
+      "patientName": "Arjun Reddy",
+      "phone": "+919123456780",
+      "previousReportId": "REP003",
+      "previousTestDate": "2026-08-15",
+      "nextReminderDate": "2026-09-15",
+      "testList": "Lipid Profile, HbA1c",
+      "status": "OPTED OUT",
+      "optIn": false,
+      "cycleMonth": "2026-09",
+      "sentAt": null,
+      "deliveredAt": null,
+      "readAt": null,
+      "failedAt": null,
+      "failureReason": "Patient opted out (STOP received)",
+      "whatsappMessageId": null,
+      "retryCount": 0,
+      "createdAt": "2026-09-12T10:42:37.470Z",
+      "updatedAt": "2026-09-12T10:42:37.470Z"
+    }
+  ],
+  "messages": []
+}
