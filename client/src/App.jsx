@@ -1186,6 +1186,10 @@ function Layout({
 
   return (
     <div className="app">
+      <div
+        className={`sidebar-backdrop ${mobileOpen ? "show" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
       <aside className={`sidebar ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="brand">
           <div className="brandmark">
