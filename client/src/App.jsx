@@ -1142,6 +1142,7 @@ function Layout({
     ["/dashboard", "Dashboard", Home],
     ["/patients/new", "Patient Entry", User],
     ["/patients", "Patients", Users],
+    ["/patient-history", "Patient History", Clock],
     ["/doctors", "Doctors", Stethoscope],
     ["/tests", "Test Management", FlaskConical],
     ["/test-master", "Test Master", ClipboardList],
@@ -1154,9 +1155,10 @@ function Layout({
     ["/settings", "Settings", SettingsIcon],
   ];
 
+  const currentPath = (route || "").split("?")[0];
   const active =
-    menu.find(([path]) => route === path)?.[1] ||
-    (route.startsWith("/patients/") ? "Patient Entry" : "Dashboard");
+    menu.find(([path]) => currentPath === path)?.[1] ||
+    (currentPath.startsWith("/patients/") ? "Patient Entry" : "Dashboard");
 
   return (
     <div className="app">
@@ -1188,10 +1190,10 @@ function Layout({
             <button
               key={path}
               className={`navitem ${
-                route === path ||
+                currentPath === path ||
                 (path === "/patients/new" &&
-                  route.startsWith("/patients/") &&
-                  route !== "/patients")
+                  currentPath.startsWith("/patients/") &&
+                  currentPath !== "/patients")
                   ? "active"
                   : ""
               }`}
@@ -3921,6 +3923,527 @@ function TestMaster({ onToast }) {
 }
 
 /* =========================================================
+   PAGE: PATIENT CLINICAL HISTORY & ARCHIVE
+   ========================================================= */
+
+function PatientHistory({ navigate, onToast }) {
+  const [patients, setPatients] = useState(() =>
+    read(STORAGE.patients, DEFAULT_PATIENTS)
+  );
+  const [reports, setReports] = useState(() =>
+    read(STORAGE.reports, DEFAULT_REPORTS)
+  );
+  const [bills, setBills] = useState(() =>
+    read(STORAGE.bills, DEFAULT_BILLS)
+  );
+  const tests = read(STORAGE.tests, DEFAULT_TESTS);
+  const settings = read(STORAGE.settings, {
+    labName: "TAZ DIAGNOSTIC",
+    phone: "9440985131",
+    email: "tazdiagnostic@gmail.com",
+    address: "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh",
+  });
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id || "");
+
+  const filteredPatients = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return patients;
+    return patients.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.id.toLowerCase().includes(q) ||
+      (p.phone && p.phone.toLowerCase().includes(q)) ||
+      (p.referredBy && p.referredBy.toLowerCase().includes(q))
+    );
+  }, [patients, searchTerm]);
+
+  // Keep active patient in sync with search
+  const activePatient = useMemo(() => {
+    const found = patients.find((p) => p.id === selectedPatientId);
+    if (found) return found;
+    return filteredPatients[0] || null;
+  }, [patients, selectedPatientId, filteredPatients]);
+
+  const patientReports = useMemo(() => {
+    if (!activePatient) return [];
+    return reports
+      .filter((r) => r.patientId === activePatient.id)
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  }, [reports, activePatient]);
+
+  const patientBills = useMemo(() => {
+    if (!activePatient) return [];
+    return bills.filter((b) => b.patientId === activePatient.id);
+  }, [bills, activePatient]);
+
+  const totalPaid = patientBills.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+  function handlePrintHistoryReport(rep) {
+    if (!activePatient || !rep) return;
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      onToast("Popup blocked! Please allow popups to print report.", "warning");
+      return;
+    }
+
+    const assignedIds = activePatient.tests || [];
+    const assignedTests = assignedIds
+      .map((id) => tests.find((t) => t.id === id))
+      .filter(Boolean);
+
+    const extraTests = tests.filter((t) => {
+      if (assignedIds.includes(t.id)) return false;
+      const val = rep.results?.[t.id];
+      return val !== undefined && val !== null && String(val).trim() !== "";
+    });
+
+    const repTests = [...assignedTests, ...extraTests];
+
+    const testRows = repTests.map((t, idx) => {
+      const val = rep.results?.[t.id] ?? "—";
+      const isAbnormal = getAbnormalFlag(val, t.reference, activePatient.gender);
+      return `
+        <tr>
+          <td style="padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 12px;">${idx + 1}</td>
+          <td style="padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 12px; font-weight: 700; color: #5b0a1a;">
+            ${t.name}
+            <div style="font-size: 10px; color: #777;">${t.category}</div>
+          </td>
+          <td style="padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 13px; font-weight: 800; color: ${isAbnormal ? '#c4183c' : '#111'};">
+            ${val} ${isAbnormal ? '<span style="font-size: 10px; color: #c4183c; font-weight: bold;">(ABNORMAL)</span>' : ''}
+          </td>
+          <td style="padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 12px;">${t.unit || "—"}</td>
+          <td style="padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 12px; color: #555;">${t.reference || "—"}</td>
+        </tr>
+      `;
+    }).join("");
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Laboratory Report - ${rep.id} - ${activePatient.name}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 25px; color: #222; margin: 0; }
+            .header { text-align: center; border-bottom: 2px solid #5b0a1a; padding-bottom: 12px; margin-bottom: 18px; }
+            .header h1 { margin: 0; color: #5b0a1a; font-size: 22px; }
+            .header p { margin: 3px 0 0; color: #666; font-size: 12px; }
+            .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; background: #faf5f6; padding: 12px; border-radius: 6px; border: 1px solid #e8d8dc; }
+            .info-item { font-size: 12px; }
+            .info-item strong { color: #380a15; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #5b0a1a; color: white; padding: 8px 10px; text-align: left; font-size: 12px; }
+            .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; }
+            .signature { border-top: 1px dashed #777; padding-top: 4px; text-align: center; min-width: 160px; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${settings.labName}</h1>
+            <p>${settings.address}</p>
+            <p style="font-weight: 700; color: #5b0a1a; margin-top: 5px;">CLINICAL PATHOLOGY REPORT</p>
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><strong>Patient ID:</strong> ${activePatient.id}</div>
+            <div class="info-item"><strong>Patient Name:</strong> ${activePatient.name}</div>
+            <div class="info-item"><strong>Age / Gender:</strong> ${activePatient.age} Yrs / ${activePatient.gender}</div>
+            <div class="info-item"><strong>Report ID:</strong> ${rep.id}</div>
+            <div class="info-item"><strong>Visit Date:</strong> ${rep.date}</div>
+            <div class="info-item"><strong>Referred By:</strong> ${rep.doctor || activePatient.referredBy || "Self"}</div>
+            <div class="info-item"><strong>Contact:</strong> ${activePatient.phone}</div>
+            <div class="info-item"><strong>Status:</strong> ${rep.status}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Investigation Test</th>
+                <th>Result Value</th>
+                <th>Units</th>
+                <th>Biological Ref Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${testRows || '<tr><td colspan="5" style="text-align:center; padding: 20px;">No tests recorded</td></tr>'}
+            </tbody>
+          </table>
+          <div class="footer">
+            <div>
+              <p style="color: #666; font-size: 11px;">Note: Diagnostic results are corroborated with clinical findings.</p>
+            </div>
+            <div class="signature">
+              <strong>Authorized Pathologist</strong><br/>
+              <span style="font-size: 10px; color: #666;">${settings.labName}</span>
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Patient History & Clinical Archive"
+        subtitle="Search any patient by Name, Phone Number, or ID to view complete lifetime visit history, diagnostic test records, and billing."
+      >
+        <Button primary onClick={() => navigate("/patients/new")}>
+          <Plus size={16} /> New Patient Entry
+        </Button>
+      </PageHeader>
+
+      {/* SEARCH BAR */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <div className="search" style={{ flex: 1, minWidth: "260px", margin: 0 }}>
+            <Search size={18} />
+            <input
+              placeholder="Search patient by Name, Phone Number (e.g. 9441906474), or Patient ID (e.g. PAT002)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ fontSize: 14, padding: "10px 12px 10px 42px" }}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                style={{ border: 0, background: "transparent", cursor: "pointer", color: "#888" }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ fontSize: 13, color: "#666" }}>
+              Matching: <b>{filteredPatients.length}</b> patient(s)
+            </span>
+            <Button
+              onClick={() => {
+                setPatients(read(STORAGE.patients, DEFAULT_PATIENTS));
+                setReports(read(STORAGE.reports, DEFAULT_REPORTS));
+                setBills(read(STORAGE.bills, DEFAULT_BILLS));
+                onToast("Refreshed all patient records!");
+              }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+            >
+              <RefreshCw size={14} /> Refresh
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick select chip list if filtered */}
+        {searchTerm && filteredPatients.length > 0 && (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0e6e8" }}>
+            <span style={{ fontSize: "12px", color: "#5b0a1a", fontWeight: "700", alignSelf: "center" }}>Select:</span>
+            {filteredPatients.slice(0, 8).map((p) => (
+              <button
+                type="button"
+                key={p.id}
+                onClick={() => {
+                  setSelectedPatientId(p.id);
+                  setSearchTerm("");
+                }}
+                className={`tab ${activePatient?.id === p.id ? "active" : ""}`}
+                style={{ padding: "4px 10px", fontSize: "12px", borderRadius: "16px" }}
+              >
+                {p.name} ({p.id} • {p.phone || "No phone"})
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {activePatient ? (
+        <>
+          {/* PATIENT PROFILE HEADER CARD */}
+          <div
+            className="card"
+            style={{
+              background: "linear-gradient(135deg, #5b0a1a, #82142c)",
+              color: "#fff",
+              padding: "24px",
+              borderRadius: "14px",
+              marginBottom: "22px",
+              boxShadow: "0 6px 20px rgba(91, 10, 26, 0.25)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ display: "flex", gap: "18px", alignItems: "center" }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.2)",
+                    border: "2px solid rgba(255,255,255,0.5)",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 24,
+                    fontWeight: 800,
+                  }}
+                >
+                  {(activePatient.name || "P").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#fff" }}>
+                      {activePatient.name}
+                    </h2>
+                    <span
+                      style={{
+                        background: "rgba(255,255,255,0.25)",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        fontSize: 12,
+                        fontFamily: "monospace",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {activePatient.id}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "16px", marginTop: "6px", fontSize: "13px", opacity: 0.95, flexWrap: "wrap" }}>
+                    <span>Age / Gender: <b>{activePatient.age} yrs / {activePatient.gender}</b></span>
+                    <span>Phone: <b>{activePatient.phone || "—"}</b></span>
+                    <span>Referred By: <b>{activePatient.referredBy || "Self"}</b></span>
+                    <span>Registered: <b>{activePatient.date || "—"}</b></span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <Button
+                  onClick={() => navigate(`/reports?patient=${activePatient.id}`)}
+                  style={{ background: "#ffffff", color: "#5b0a1a", fontWeight: 700 }}
+                >
+                  <FileText size={15} /> Open in Reports
+                </Button>
+                <Button
+                  onClick={() => navigate(`/billing`)}
+                  style={{ background: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.4)" }}
+                >
+                  <CreditCard size={15} /> View Bills
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Stats Banner */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "12px",
+                marginTop: "20px",
+                paddingTop: "16px",
+                borderTop: "1px solid rgba(255,255,255,0.2)",
+              }}
+            >
+              <div style={{ background: "rgba(0,0,0,0.15)", padding: "10px 14px", borderRadius: 8 }}>
+                <small style={{ display: "block", fontSize: 11, opacity: 0.85, textTransform: "uppercase" }}>Total Lab Visits</small>
+                <strong style={{ fontSize: 18 }}>{patientReports.length} Visits</strong>
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.15)", padding: "10px 14px", borderRadius: 8 }}>
+                <small style={{ display: "block", fontSize: 11, opacity: 0.85, textTransform: "uppercase" }}>Enrolled Tests</small>
+                <strong style={{ fontSize: 18 }}>{activePatient.tests?.length || 0} Tests</strong>
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.15)", padding: "10px 14px", borderRadius: 8 }}>
+                <small style={{ display: "block", fontSize: 11, opacity: 0.85, textTransform: "uppercase" }}>Total Invoiced</small>
+                <strong style={{ fontSize: 18 }}>{money(totalPaid)}</strong>
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.15)", padding: "10px 14px", borderRadius: 8 }}>
+                <small style={{ display: "block", fontSize: 11, opacity: 0.85, textTransform: "uppercase" }}>Latest Status</small>
+                <strong style={{ fontSize: 18 }}>{patientReports[0]?.status || "Active"}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* CHRONOLOGICAL VISITS & TEST HISTORY */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="sectiontitle">
+              <FlaskConical color="#5b0a1a" />
+              <div>
+                <h3>Lifetime Diagnostic History & Test Findings ({patientReports.length})</h3>
+                <p>Complete record of all pathology tests, visit dates, values, reference limits, and doctor remarks.</p>
+              </div>
+            </div>
+
+            {patientReports.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", background: "#faf7f8", borderRadius: 10, border: "1px dashed #dec9cf" }}>
+                <FlaskConical size={40} color="#b9959e" style={{ marginBottom: 10 }} />
+                <h4 style={{ margin: "0 0 6px", color: "#5b0a1a" }}>No Diagnostic Reports on File</h4>
+                <p style={{ margin: "0 0 16px", color: "#666", fontSize: 13 }}>
+                  No test reports have been generated for {activePatient.name} yet.
+                </p>
+                <Button primary onClick={() => navigate(`/reports?patient=${activePatient.id}`)}>
+                  <Plus size={15} /> Create First Report for {activePatient.name}
+                </Button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {patientReports.map((rep, repIdx) => {
+                  const assignedIds = activePatient.tests || [];
+                  const assignedTests = assignedIds
+                    .map((id) => tests.find((t) => t.id === id))
+                    .filter(Boolean);
+
+                  const extraTests = tests.filter((t) => {
+                    if (assignedIds.includes(t.id)) return false;
+                    const val = rep.results?.[t.id];
+                    return val !== undefined && val !== null && String(val).trim() !== "";
+                  });
+
+                  const repTests = [...assignedTests, ...extraTests];
+
+                  return (
+                    <div
+                      key={rep.id}
+                      style={{
+                        border: "1.5px solid #eadde1",
+                        borderRadius: "12px",
+                        overflow: "hidden",
+                        background: "#fff",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                      }}
+                    >
+                      {/* Visit Header */}
+                      <div
+                        style={{
+                          background: "#faf5f6",
+                          padding: "14px 18px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderBottom: "1px solid #eadde1",
+                          flexWrap: "wrap",
+                          gap: "10px",
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontWeight: 800, color: "#5b0a1a", fontSize: 16 }}>
+                              Visit #{patientReports.length - repIdx}: Report {rep.id}
+                            </span>
+                            <span
+                              className={`badge ${
+                                rep.status === "Completed" ? "active" : "inactive"
+                              }`}
+                              style={{
+                                background: rep.status === "Completed" ? "#e6f7ec" : "#fff4e5",
+                                color: rep.status === "Completed" ? "#0d7a36" : "#b76e00",
+                                border: 0,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {rep.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#666", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                            <span>📅 Date: <b>{rep.date}</b></span>
+                            <span>👨‍⚕️ Doctor: <b>{rep.doctor || activePatient.referredBy || "Self"}</b></span>
+                            <span>🧪 Tests Included: <b>{repTests.length}</b></span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <Button
+                            onClick={() => handlePrintHistoryReport(rep)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "6px 12px" }}
+                          >
+                            <Printer size={14} /> Print Report
+                          </Button>
+                          <Button
+                            primary
+                            onClick={() => navigate(`/reports?patient=${activePatient.id}`)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "6px 12px" }}
+                          >
+                            <Edit3 size={14} /> Result Entry
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Tests Table for this Visit */}
+                      <div className="tablewrap" style={{ margin: 0, border: 0 }}>
+                        <table style={{ margin: 0 }}>
+                          <thead>
+                            <tr style={{ background: "#fff" }}>
+                              <th style={{ width: 40 }}>#</th>
+                              <th>Test Name</th>
+                              <th>Category</th>
+                              <th>Result Finding</th>
+                              <th>Unit</th>
+                              <th>Biological Ref Range</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {repTests.map((t, idx) => {
+                              const val = rep.results?.[t.id] ?? "—";
+                              const isAbnormal = getAbnormalFlag(val, t.reference, activePatient.gender);
+                              return (
+                                <tr key={t.id}>
+                                  <td>{idx + 1}</td>
+                                  <td>
+                                    <b>{t.name}</b>
+                                    <small>{t.id}</small>
+                                  </td>
+                                  <td>{t.category}</td>
+                                  <td>
+                                    <span
+                                      style={{
+                                        fontWeight: 800,
+                                        fontSize: 14,
+                                        color: isAbnormal ? "#c4183c" : "#222",
+                                        background: isAbnormal ? "#ffeef1" : "transparent",
+                                        padding: isAbnormal ? "2px 6px" : "0",
+                                        borderRadius: 4,
+                                      }}
+                                    >
+                                      {val}
+                                    </span>
+                                    {isAbnormal && (
+                                      <span style={{ fontSize: 10, color: "#c4183c", fontWeight: 700, marginLeft: 6 }}>
+                                        ★ ABNORMAL
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td>{t.unit || "—"}</td>
+                                  <td style={{ color: "#666" }}>{t.reference || "—"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
+          <User size={48} color="#b9959e" style={{ marginBottom: 12 }} />
+          <h3 style={{ color: "#5b0a1a" }}>No Patient Selected</h3>
+          <p style={{ color: "#777", maxWidth: 400, margin: "0 auto 20px" }}>
+            Search for a patient using their Mobile Number, Patient Name, or Patient ID above.
+          </p>
+          <Button primary onClick={() => navigate("/patients/new")}>
+            <Plus size={16} /> Register New Patient
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =========================================================
    PAGE: REPORTS WORKFLOW & VIEWER
    ========================================================= */
 
@@ -4080,7 +4603,7 @@ function formatLabDate(dateStr) {
   }
 }
 
-function Reports({ onToast, navigate }) {
+function Reports({ onToast, navigate, route }) {
   const [patients, setPatients] = useState(() =>
     read(STORAGE.patients, DEFAULT_PATIENTS)
   );
@@ -4125,28 +4648,74 @@ function Reports({ onToast, navigate }) {
   }
 
   const [filterTab, setFilterTab] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Check URL param if patient is specified
-  const urlParams = new URLSearchParams(window.location.search);
-  const patientParam = urlParams.get("patient");
+  // Sync patient query param from route or window.location
+  useEffect(() => {
+    const qStr = route && route.includes("?") ? route.split("?")[1] : window.location.search;
+    const params = new URLSearchParams(qStr);
+    const pId = params.get("patient");
+    if (pId) {
+      const match = reports.find((r) => r.patientId === pId);
+      if (match) {
+        setSelectedReport(match.id);
+      } else {
+        const pat = patients.find((p) => p.id === pId);
+        if (pat) {
+          const newId = nextId("REP", reports);
+          const newEntry = {
+            id: newId,
+            patientId: pat.id,
+            doctor: pat.referredBy || "Self",
+            date: today(),
+            status: "Pending",
+            results: {},
+          };
+          const next = [newEntry, ...reports];
+          setReports(next);
+          write(STORAGE.reports, next);
+          setSelectedReport(newId);
+          onToast(`Created new Report ${newId} for ${pat.name}!`);
+        }
+      }
+    }
+  }, [route]);
 
   const initialReportId = useMemo(() => {
-    if (patientParam) {
-      const match = reports.find((r) => r.patientId === patientParam);
+    const qStr = route && route.includes("?") ? route.split("?")[1] : window.location.search;
+    const params = new URLSearchParams(qStr);
+    const pId = params.get("patient");
+    if (pId) {
+      const match = reports.find((r) => r.patientId === pId);
       if (match) return match.id;
     }
     return reports[0]?.id || "";
-  }, [patientParam, reports]);
+  }, [route, reports]);
 
   const [selectedReport, setSelectedReport] = useState(initialReportId);
   const [showCreateReport, setShowCreateReport] = useState(false);
   const [newReportPatientId, setNewReportPatientId] = useState("");
 
-  const filteredReports = reports.filter((r) => {
-    if (filterTab === "Pending") return r.status !== "Completed";
-    if (filterTab === "Completed") return r.status === "Completed";
-    return true;
-  });
+  const filteredReports = useMemo(() => {
+    let list = reports;
+    if (filterTab === "Pending") list = list.filter((r) => r.status !== "Completed");
+    if (filterTab === "Completed") list = list.filter((r) => r.status === "Completed");
+
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return list;
+
+    return list.filter((item) => {
+      const p = patients.find((pat) => pat.id === item.patientId);
+      return (
+        item.id.toLowerCase().includes(q) ||
+        (item.patientId && item.patientId.toLowerCase().includes(q)) ||
+        (p?.name && p.name.toLowerCase().includes(q)) ||
+        (p?.phone && p.phone.toLowerCase().includes(q)) ||
+        (p?.id && p.id.toLowerCase().includes(q)) ||
+        (item.doctor && item.doctor.toLowerCase().includes(q))
+      );
+    });
+  }, [reports, filterTab, searchTerm, patients]);
 
   useEffect(() => {
     if (filteredReports.length > 0) {
@@ -4159,6 +4728,63 @@ function Reports({ onToast, navigate }) {
 
   const report = reports.find((r) => r.id === selectedReport);
   const patient = patients.find((p) => p.id === report?.patientId);
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return;
+
+    if (filteredReports.length > 0) {
+      setSelectedReport(filteredReports[0].id);
+      const p = patients.find((pat) => pat.id === filteredReports[0].patientId);
+      onToast(`Loaded report ${filteredReports[0].id} for ${p?.name || "patient"}!`);
+      return;
+    }
+
+    const matchReport = reports.find((item) => {
+      const p = patients.find((pat) => pat.id === item.patientId);
+      return (
+        item.id.toLowerCase().includes(q) ||
+        (item.patientId && item.patientId.toLowerCase().includes(q)) ||
+        (p?.name && p.name.toLowerCase().includes(q)) ||
+        (p?.phone && p.phone.toLowerCase().includes(q)) ||
+        (p?.id && p.id.toLowerCase().includes(q))
+      );
+    });
+
+    if (matchReport) {
+      setSelectedReport(matchReport.id);
+      const p = patients.find((pat) => pat.id === matchReport.patientId);
+      onToast(`Loaded report ${matchReport.id} for ${p?.name || "patient"}!`);
+      return;
+    }
+
+    const matchPatient = patients.find(
+      (p) =>
+        p.id.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        (p.phone && p.phone.toLowerCase().includes(q))
+    );
+
+    if (matchPatient) {
+      const newId = nextId("REP", reports);
+      const newEntry = {
+        id: newId,
+        patientId: matchPatient.id,
+        doctor: matchPatient.referredBy || "Self",
+        date: today(),
+        status: "Pending",
+        results: {},
+      };
+      const next = [newEntry, ...reports];
+      setReports(next);
+      write(STORAGE.reports, next);
+      setSelectedReport(newId);
+      onToast(`Created new Report ${newId} for ${matchPatient.name}!`);
+    } else {
+      onToast(`No patient or report found matching "${searchTerm}".`, "warning");
+    }
+  };
 
   const CLINICAL_GROUPS = [
     "Clinical Pathology",
@@ -4647,31 +5273,59 @@ function Reports({ onToast, navigate }) {
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <div className="toolbar">
-          <div className="search">
-            <Search size={17} />
-            <input
-              placeholder="Search report by patient name or ID..."
-              onChange={(e) => {
-                const value = e.target.value.toLowerCase();
-                const found = reports.find((item) => {
-                  const p = patients.find(
-                    (patientItem) => patientItem.id === item.patientId
-                  );
-                  return (
-                    p?.name.toLowerCase().includes(value) ||
-                    item.id.toLowerCase().includes(value)
-                  );
-                });
-                if (found) setSelectedReport(found.id);
-              }}
-            />
-          </div>
+        <div className="toolbar" style={{ gap: "12px", flexWrap: "wrap" }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: "8px", flex: 1, minWidth: "280px" }}>
+            <div className="search" style={{ flex: 1, margin: 0 }}>
+              <Search size={17} />
+              <input
+                placeholder="Search patient name, phone (e.g. 9441906474), ID, or Report ID..."
+                value={searchTerm}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchTerm(val);
+                  const q = val.toLowerCase().trim();
+                  if (q) {
+                    const found = reports.find((item) => {
+                      const p = patients.find(
+                        (patientItem) => patientItem.id === item.patientId
+                      );
+                      return (
+                        item.id.toLowerCase().includes(q) ||
+                        (item.patientId && item.patientId.toLowerCase().includes(q)) ||
+                        (p?.name && p.name.toLowerCase().includes(q)) ||
+                        (p?.phone && p.phone.toLowerCase().includes(q)) ||
+                        (p?.id && p.id.toLowerCase().includes(q))
+                      );
+                    });
+                    if (found) setSelectedReport(found.id);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearchSubmit(e);
+                  }
+                }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  style={{ border: 0, background: "transparent", cursor: "pointer", color: "#888" }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <Button primary type="submit" style={{ padding: "0 16px", whiteSpace: "nowrap" }}>
+              Find Report
+            </Button>
+          </form>
 
           <select
             className="smallselect"
             value={selectedReport}
             onChange={(e) => setSelectedReport(e.target.value)}
+            style={{ minWidth: "260px" }}
           >
             {filteredReports.map((item) => {
               const p = patients.find(
@@ -4679,7 +5333,7 @@ function Reports({ onToast, navigate }) {
               );
               return (
                 <option key={item.id} value={item.id}>
-                  {item.id} — {p?.name} ({item.status})
+                  {item.id} — {p?.name || "Unknown"} {p?.phone ? `(${p.phone})` : ""} [{item.status}]
                 </option>
               );
             })}
@@ -7018,7 +7672,7 @@ export default function App() {
   );
 
   const [route, setRoute] = useState(
-    window.location.pathname || "/dashboard"
+    (window.location.pathname || "/dashboard") + (window.location.search || "")
   );
 
   const [toastMessage, setToastMessage] = useState("");
@@ -7031,7 +7685,7 @@ export default function App() {
     seed();
 
     const onPop = () => {
-      setRoute(window.location.pathname || "/dashboard");
+      setRoute((window.location.pathname || "/dashboard") + (window.location.search || ""));
     };
 
     window.addEventListener("popstate", onPop);
@@ -7039,7 +7693,7 @@ export default function App() {
   }, []);
 
   function navigate(path) {
-    if (window.location.pathname !== path) {
+    if ((window.location.pathname + window.location.search) !== path) {
       window.history.pushState({}, "", path);
     }
     setRoute(path);
@@ -7067,33 +7721,36 @@ export default function App() {
     );
   }
 
+  const currentPath = (route || "").split("?")[0] || "/dashboard";
   let page;
 
-  if (route === "/dashboard" || route === "/") {
+  if (currentPath === "/dashboard" || currentPath === "/") {
     page = <Dashboard navigate={navigate} onToast={showToast} />;
-  } else if (route === "/patients/new") {
+  } else if (currentPath === "/patients/new") {
     page = <PatientEntry navigate={navigate} onToast={showToast} />;
-  } else if (route === "/patients") {
+  } else if (currentPath === "/patients") {
     page = <Patients navigate={navigate} onToast={showToast} />;
-  } else if (route === "/doctors") {
+  } else if (currentPath === "/patient-history") {
+    page = <PatientHistory navigate={navigate} onToast={showToast} />;
+  } else if (currentPath === "/doctors") {
     page = <Doctors onToast={showToast} />;
-  } else if (route === "/tests") {
+  } else if (currentPath === "/tests") {
     page = <TestManagement navigate={navigate} onToast={showToast} />;
-  } else if (route === "/test-master") {
+  } else if (currentPath === "/test-master") {
     page = <TestMaster onToast={showToast} />;
-  } else if (route === "/reports") {
-    page = <Reports navigate={navigate} onToast={showToast} />;
-  } else if (route === "/messages") {
+  } else if (currentPath === "/reports") {
+    page = <Reports navigate={navigate} onToast={showToast} route={route} />;
+  } else if (currentPath === "/messages") {
     page = <Messages onToast={showToast} />;
-  } else if (route === "/billing") {
+  } else if (currentPath === "/billing") {
     page = <Billing onToast={showToast} />;
-  } else if (route === "/analytics") {
+  } else if (currentPath === "/analytics") {
     page = <Analytics onToast={showToast} />;
-  } else if (route === "/branches") {
+  } else if (currentPath === "/branches") {
     page = <Branches onToast={showToast} />;
-  } else if (route === "/users") {
+  } else if (currentPath === "/users") {
     page = <UsersPage session={session} onToast={showToast} />;
-  } else if (route === "/settings") {
+  } else if (currentPath === "/settings") {
     page = <SettingsPage onToast={showToast} />;
   } else {
     page = <Dashboard navigate={navigate} onToast={showToast} />;
