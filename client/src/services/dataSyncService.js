@@ -20,15 +20,27 @@ const REVERSE_STORAGE_MAP = Object.entries(STORAGE_KEY_MAP).reduce((acc, [col, k
   return acc;
 }, {});
 
-// Detect API base dynamically: works whether on localhost or LAN IP (e.g. 192.168.1.50)
+// Detect API base dynamically: works on Vercel, localhost, or LAN IP
 function getApiBase() {
+  const envApi = import.meta.env?.VITE_API_BASE;
+  if (envApi) return envApi.replace(/\/$/, "");
+
   const hostname = window.location.hostname || "localhost";
-  // In development Vite proxy handles /api, but direct fallback is http://<hostname>:5000/api
-  if (window.location.port === "5173" || window.location.port === "3000") {
+  
+  // If running in local development mode with Vite proxy
+  if ((hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) && (window.location.port === "5173" || window.location.port === "3000")) {
     return "/api";
   }
-  return `http://${hostname}:5000/api`;
+
+  // If running on local network without proxy
+  if (hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+    return `http://${hostname}:5000/api`;
+  }
+
+  // Default to 24/7 Render Cloud Production Backend (for Vercel & Public Web)
+  return "https://taz-diagnostics.onrender.com/api";
 }
+
 
 let currentDataVersion = 0;
 let isConnectedToServer = false;
