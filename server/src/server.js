@@ -30,6 +30,21 @@ app.use("/api/store", dataSyncRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/whatsapp", webhookRouter);
 
+app.get("/", (_req, res) => {
+  res.json({
+    status: "online",
+    application: "TAZ COMPANY — TAZ DIAGNOSTIC LAB SERVER",
+    version: "1.0.0",
+    multiPcSync: "Active",
+    endpoints: {
+      health: "/api/health",
+      dataBundle: "/api/data/all/bundle",
+      reminders: "/api/reminders"
+    }
+  });
+});
+
+
 app.get("/api/health", (_req, res) => {
   res.json({
     success: true,
