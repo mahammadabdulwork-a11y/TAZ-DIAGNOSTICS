@@ -45,6 +45,13 @@ import {
 // PDF is now generated via a dedicated print window (no external PDF lib needed)
 import "./styles.css";
 import { TECHNICIAN_SIGNATURE_SRC } from "./technicianSignatureData.js";
+import {
+  startLiveSync,
+  syncCollectionToBackend,
+  getSyncStatus,
+  onSyncStatusChange,
+} from "./services/dataSyncService.js";
+
 
 /* =========================================================
    TAZ COMPANY — STORAGE KEYS & UTILITIES
@@ -82,6 +89,9 @@ function read(key, fallback) {
 function write(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
   window.dispatchEvent(new Event("taz-company-update"));
+  if (key && key !== STORAGE.session) {
+    syncCollectionToBackend(key, value);
+  }
 }
 
 function nextId(prefix, items) {
@@ -928,41 +938,33 @@ const DEFAULT_MESSAGES = [];
 
 function seed(force = false) {
   const existingDocs = read(STORAGE.doctors, []);
-  if (force || !existingDocs.length || !existingDocs.some((d) => d.name === "Dr. Ahmed Khan")) {
+  if (force || !existingDocs || !existingDocs.length) {
     write(STORAGE.doctors, DEFAULT_DOCTORS);
   }
   
   const existingTests = read(STORAGE.tests, []);
-  const catalogVersion = read("taz_tests_catalog_v", 0);
-  if (force || !existingTests.length || existingTests.length !== DEFAULT_TESTS.length || catalogVersion < 4) {
+  if (force || !existingTests || !existingTests.length) {
     write(STORAGE.tests, DEFAULT_TESTS);
     write("taz_tests_catalog_v", 4);
   }
 
-  // Always ensure branches exist and are valid (v2 check)
-  const branchVersion = read("taz_branches_v", 0);
+  // Always ensure branches exist
   const existingBranches = read(STORAGE.branches, []);
-  if (force || !existingBranches.length || branchVersion < 3) {
+  if (force || !existingBranches || !existingBranches.length) {
     write(STORAGE.branches, DEFAULT_BRANCHES);
     write("taz_branches_v", 3);
   }
 
-  const usersV = read("taz_users_v", 0);
-  if (force || !localStorage.getItem(STORAGE.users) || usersV < 2) {
+  if (force || !localStorage.getItem(STORAGE.users)) {
     write(STORAGE.users, DEFAULT_USERS);
     write("taz_users_v", 2);
   }
 
-  // Production Fresh Start: Clear all previous demo/test records (Patients, Reports, Invoices, Messages)
-  const freshStartV = read("taz_fresh_start_v", 0);
-  if (force || freshStartV < 3) {
+  if (force && !localStorage.getItem(STORAGE.patients)) {
     write(STORAGE.patients, []);
     write(STORAGE.reports, []);
     write(STORAGE.bills, []);
     write(STORAGE.messages, []);
-    write("taz_patients_v", 3);
-    write("taz_reports_v", 3);
-    write("taz_fresh_start_v", 3);
   }
   const storedSettings = read(STORAGE.settings, null);
   const correctAddress = "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh";
@@ -1137,6 +1139,14 @@ function Layout({
   logout,
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(() => getSyncStatus());
+
+  useEffect(() => {
+    const unsub = onSyncStatusChange((status) => {
+      setSyncStatus({ ...status });
+    });
+    return unsub;
+  }, []);
 
   const menu = [
     ["/dashboard", "Dashboard", Home],
@@ -1245,13 +1255,43 @@ function Layout({
             <strong>{active}</strong>
           </div>
 
-          <div className="topuser">
-            <div className="avatar">
-              {session.name?.charAt(0).toUpperCase()}
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                fontSize: "12px",
+                fontWeight: "600",
+                padding: "5px 12px",
+                borderRadius: "20px",
+                backgroundColor: syncStatus.isConnected ? "#ECFDF5" : "#FEF3C7",
+                color: syncStatus.isConnected ? "#065F46" : "#92400E",
+                border: `1px solid ${syncStatus.isConnected ? "#A7F3D0" : "#FDE68A"}`,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)"
+              }}
+              title={syncStatus.isConnected ? "Central Database Connected — Real-time Multi-PC Sync Active" : "Connecting to Central Server..."}
+            >
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: syncStatus.isConnected ? "#10B981" : "#F59E0B",
+                  boxShadow: syncStatus.isConnected ? "0 0 8px #10B981" : "none"
+                }}
+              />
+              <span>{syncStatus.isConnected ? "Live Multi-PC Synced" : "Connecting..."}</span>
             </div>
-            <div>
-              <b>{session.name}</b>
-              <small>{session.role}</small>
+
+            <div className="topuser">
+              <div className="avatar">
+                {session.name?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <b>{session.name}</b>
+                <small>{session.role}</small>
+              </div>
             </div>
           </div>
         </header>
@@ -7683,13 +7723,17 @@ export default function App() {
 
   useEffect(() => {
     seed();
+    const cleanupSync = startLiveSync();
 
     const onPop = () => {
       setRoute((window.location.pathname || "/dashboard") + (window.location.search || ""));
     };
 
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (cleanupSync) cleanupSync();
+    };
   }, []);
 
   function navigate(path) {

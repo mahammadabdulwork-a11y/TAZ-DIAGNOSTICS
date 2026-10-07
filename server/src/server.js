@@ -3,16 +3,30 @@ import cors from "cors";
 import dotenv from "dotenv";
 import remindersRouter from "./routes/reminders.js";
 import webhookRouter from "./routes/webhook.js";
+import dataSyncRouter from "./routes/dataSync.js";
 import { initScheduler } from "./scheduler.js";
 import { initDb, isDbConnected } from "./db.js";
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Enable CORS for all local network computers and web clients
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  })
+);
+
+// High payload limit for lab reports, doctor images, and data backups
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // API Routes
+app.use("/api/data", dataSyncRouter);
+app.use("/api/store", dataSyncRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/whatsapp", webhookRouter);
 
@@ -22,8 +36,9 @@ app.get("/api/health", (_req, res) => {
     application: "TAZ COMPANY",
     product: "TAZ DIAGNOSTIC",
     status: "online",
-    database: isDbConnected() ? "MySQL Connected" : "Local File Fallback",
-    feature: "Live Monthly WhatsApp Retest Reminders",
+    database: isDbConnected() ? "MySQL Database Connected" : "Local File Central Store",
+    multiPcSync: "Active",
+    feature: "Live Monthly WhatsApp Retest Reminders & Multi-PC Real-Time Sync",
     timestamp: new Date().toISOString()
   });
 });
@@ -34,13 +49,16 @@ async function startServer() {
   // Initialize MySQL Database Pool & Tables
   await initDb();
 
-  app.listen(PORT, async () => {
-    console.log("======================================");
-    console.log("TAZ COMPANY — TAZ DIAGNOSTIC SERVER");
-    console.log(`Server: http://localhost:${PORT}`);
-    console.log(`Database Mode: ${isDbConnected() ? "MySQL DB" : "File Storage (reminders_db.json)"}`);
-    console.log("WhatsApp Webhook: /api/whatsapp/webhook");
-    console.log("======================================");
+  // Listen on 0.0.0.0 so all PCs on the network can connect!
+  app.listen(PORT, "0.0.0.0", async () => {
+    console.log("=================================================");
+    console.log("   TAZ COMPANY — TAZ DIAGNOSTIC LAB SERVER       ");
+    console.log(`   Local Server:       http://localhost:${PORT}  `);
+    console.log(`   Network Multi-PC:   http://0.0.0.0:${PORT}    `);
+    console.log(`   Database Mode:      ${isDbConnected() ? "MySQL Database" : "Central File Store"}`);
+    console.log("   Multi-PC Data Sync: /api/data/* (Active)     ");
+    console.log("   WhatsApp Webhook:   /api/whatsapp/webhook     ");
+    console.log("=================================================");
 
     // Start background daily scheduler
     try {
@@ -57,4 +75,3 @@ export default app;
 if (process.env.VERCEL !== "1") {
   startServer();
 }
-

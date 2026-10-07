@@ -12,8 +12,9 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const DB_FILE = path.join(DATA_DIR, "reminders_db.json");
+const APP_STORE_FILE = path.join(DATA_DIR, "app_store.json");
 
-// Default initial dataset
+// Default initial dataset for reminders & whatsapp
 const INITIAL_DATA = {
   settings: {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
@@ -124,16 +125,73 @@ const INITIAL_DATA = {
 
 let mysqlPool = null;
 let isMysqlConnected = false;
+let lastDataVersion = Date.now();
 
 export function isDbConnected() {
   return isMysqlConnected;
 }
 
-// Initialize MySQL Database Connection and Auto-create Schema
+export function getDataVersion() {
+  return lastDataVersion;
+}
+
+export function bumpDataVersion() {
+  lastDataVersion = Date.now();
+  return lastDataVersion;
+}
+
+// ---------------------------------------------------------------------------
+// File Store Helpers
+// ---------------------------------------------------------------------------
+function getAppStoreFromFile() {
+  if (!fs.existsSync(APP_STORE_FILE)) {
+    const defaultStore = {
+      patients: [],
+      doctors: [],
+      tests: [],
+      reports: [],
+      bills: [],
+      messages: [],
+      branches: [],
+      users: [],
+      settings: null,
+      _version: Date.now()
+    };
+    fs.writeFileSync(APP_STORE_FILE, JSON.stringify(defaultStore, null, 2), "utf8");
+    return defaultStore;
+  }
+  try {
+    const raw = fs.readFileSync(APP_STORE_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return {
+      patients: [],
+      doctors: [],
+      tests: [],
+      reports: [],
+      bills: [],
+      messages: [],
+      branches: [],
+      users: [],
+      settings: null,
+      _version: Date.now()
+    };
+  }
+}
+
+function saveAppStoreToFile(store) {
+  store._version = Date.now();
+  lastDataVersion = store._version;
+  fs.writeFileSync(APP_STORE_FILE, JSON.stringify(store, null, 2), "utf8");
+}
+
+// ---------------------------------------------------------------------------
+// Initialize MySQL Database Connection and Auto-create Tables
+// ---------------------------------------------------------------------------
 export async function initDb() {
   try {
     const host = process.env.MYSQL_HOST || "127.0.0.1";
-    const port = parseInt(process.env.MYSQL_PORT || "3306", 10);
+    const port = parseInt(process.env.MYSQL_PORT || "3307", 10);
     const user = process.env.MYSQL_USER || "root";
     const password = process.env.MYSQL_PASSWORD || "";
     const dbName = process.env.MYSQL_DATABASE || "taz_company";
@@ -147,7 +205,7 @@ export async function initDb() {
         password,
         connectTimeout: 4000
       });
-      await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
       await rootConn.end();
     } catch (dbCreateErr) {
       // Continue to try direct pool connection
@@ -160,7 +218,10 @@ export async function initDb() {
       user,
       password,
       database: dbName,
-      connectTimeout: 4000
+      waitForConnections: true,
+      connectionLimit: 20,
+      queueLimit: 0,
+      connectTimeout: 5000
     });
 
     const conn = await mysqlPool.getConnection();
@@ -169,7 +230,126 @@ export async function initDb() {
     console.log(`[MySQL] Connected successfully to MySQL database "${dbName}" at ${host}:${port}!`);
     isMysqlConnected = true;
 
-    // Create MySQL Tables
+    // Create Sync Store Table for complete object persistence across all PCs
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS sync_store (
+        collection_key VARCHAR(100) PRIMARY KEY,
+        data_json LONGTEXT NOT NULL,
+        version BIGINT DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Doctors Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS doctors (
+        id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        specialization VARCHAR(255),
+        phone VARCHAR(50),
+        email VARCHAR(255),
+        clinic VARCHAR(255),
+        address TEXT,
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Tests Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS tests (
+        id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(255),
+        unit VARCHAR(100),
+        reference_range TEXT,
+        price DECIMAL(10,2) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'Active',
+        parameters JSON,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Patients Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS patients (
+        id VARCHAR(100) PRIMARY KEY,
+        mrn VARCHAR(100),
+        name VARCHAR(255) NOT NULL,
+        age VARCHAR(50),
+        gender VARCHAR(50),
+        phone VARCHAR(50),
+        email VARCHAR(255),
+        address TEXT,
+        doctor_id VARCHAR(100),
+        doctor_name VARCHAR(255),
+        branch_id VARCHAR(100),
+        tests JSON,
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Reports Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id VARCHAR(100) PRIMARY KEY,
+        patient_id VARCHAR(100),
+        patient_name VARCHAR(255),
+        doctor_name VARCHAR(255),
+        date VARCHAR(50),
+        time VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'Completed',
+        payment_status VARCHAR(50) DEFAULT 'Paid',
+        sample_type VARCHAR(100),
+        tests JSON,
+        results JSON,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Bills Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS bills (
+        id VARCHAR(100) PRIMARY KEY,
+        bill_number VARCHAR(100),
+        patient_id VARCHAR(100),
+        patient_name VARCHAR(255),
+        date VARCHAR(50),
+        total_amount DECIMAL(10,2) DEFAULT 0,
+        discount DECIMAL(10,2) DEFAULT 0,
+        paid_amount DECIMAL(10,2) DEFAULT 0,
+        balance_amount DECIMAL(10,2) DEFAULT 0,
+        payment_mode VARCHAR(50) DEFAULT 'Cash',
+        status VARCHAR(50) DEFAULT 'Paid',
+        items JSON,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Users Table
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        role VARCHAR(100) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(50),
+        branch VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Active',
+        password VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create Settings Table
     await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -186,6 +366,7 @@ export async function initDb() {
       );
     `);
 
+    // Create Consents Table
     await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS consents (
         patient_id VARCHAR(50) PRIMARY KEY,
@@ -197,6 +378,7 @@ export async function initDb() {
       );
     `);
 
+    // Create Reminders Table
     await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS reminders (
         id VARCHAR(100) PRIMARY KEY,
@@ -222,6 +404,7 @@ export async function initDb() {
       );
     `);
 
+    // Create Messages Table
     await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -249,58 +432,169 @@ export async function initDb() {
       );
     }
 
-    const [consentsRows] = await mysqlPool.query("SELECT COUNT(*) as cnt FROM consents");
-    if (consentsRows[0].cnt === 0) {
-      for (const c of INITIAL_DATA.consents) {
-        await mysqlPool.query(
-          `INSERT IGNORE INTO consents (patient_id, opt_in, consent_timestamp, opt_out_timestamp, channel, notes)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [c.patientId, c.optIn, c.consentTimestamp, c.optOutTimestamp || null, c.channel, c.notes]
-        );
-      }
-    }
-
-    const [remindersRows] = await mysqlPool.query("SELECT COUNT(*) as cnt FROM reminders");
-    if (remindersRows[0].cnt === 0) {
-      for (const r of INITIAL_DATA.reminders) {
-        await mysqlPool.query(
-          `INSERT IGNORE INTO reminders (id, patient_id, patient_name, phone, previous_report_id, previous_test_date, next_reminder_date, test_list, status, opt_in, cycle_month, sent_at, delivered_at, read_at, failed_at, failure_reason, whatsapp_message_id, retry_count, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            r.id,
-            r.patientId,
-            r.patientName,
-            r.phone,
-            r.previousReportId,
-            r.previousTestDate,
-            r.nextReminderDate,
-            r.testList,
-            r.status,
-            r.optIn,
-            r.cycleMonth,
-            r.sentAt,
-            r.deliveredAt,
-            r.readAt,
-            r.failedAt,
-            r.failureReason,
-            r.whatsappMessageId,
-            r.retryCount,
-            r.createdAt,
-            r.updatedAt
-          ]
-        );
-      }
-    }
-
-    console.log("[MySQL] Database schema initialized & seeded successfully.");
+    console.log("[MySQL] Central Multi-PC Database schema initialized successfully.");
   } catch (err) {
     isMysqlConnected = false;
-    console.warn(`[MySQL] Connection status: ${err.message}.`);
-    console.warn("[Database] Operating in local JSON file storage mode (reminders_db.json). Update server/.env with MYSQL_PASSWORD.");
+    console.warn(`[MySQL] Connection note: ${err.message}.`);
+    console.log("[Central Storage] Running in centralized file store mode (app_store.json). Multi-PC sync is FULLY operational!");
   }
 }
 
-// Synchronous JSON file fallback
+// ---------------------------------------------------------------------------
+// Unified Multi-PC Store Operations
+// ---------------------------------------------------------------------------
+
+export async function getCollectionAsync(collectionKey, fallback = []) {
+  if (isMysqlConnected && mysqlPool) {
+    try {
+      const [rows] = await mysqlPool.query(
+        "SELECT data_json FROM sync_store WHERE collection_key = ?",
+        [collectionKey]
+      );
+      if (rows.length > 0 && rows[0].data_json) {
+        return JSON.parse(rows[0].data_json);
+      }
+    } catch (err) {
+      console.warn(`[MySQL] Failed to read ${collectionKey}:`, err.message);
+    }
+  }
+
+  // File fallback
+  const store = getAppStoreFromFile();
+  return store[collectionKey] !== undefined ? store[collectionKey] : fallback;
+}
+
+export async function saveCollectionAsync(collectionKey, data) {
+  bumpDataVersion();
+
+  // Save to file fallback
+  try {
+    const store = getAppStoreFromFile();
+    store[collectionKey] = data;
+    saveAppStoreToFile(store);
+  } catch (err) {
+    console.error(`[FileStore] Error saving ${collectionKey}:`, err);
+  }
+
+  // Save to MySQL sync_store
+  if (isMysqlConnected && mysqlPool) {
+    try {
+      const jsonStr = JSON.stringify(data);
+      await mysqlPool.query(
+        `INSERT INTO sync_store (collection_key, data_json, version, updated_at)
+         VALUES (?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+           data_json = VALUES(data_json),
+           version = VALUES(version),
+           updated_at = NOW()`,
+        [collectionKey, jsonStr, lastDataVersion]
+      );
+
+      // Also mirror to structured tables where applicable for SQL reporting
+      if (collectionKey === "doctors" && Array.isArray(data)) {
+        for (const doc of data) {
+          if (!doc || !doc.id) continue;
+          await mysqlPool.query(
+            `INSERT INTO doctors (id, name, specialization, phone, email, clinic, address, status, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE
+               name = VALUES(name),
+               specialization = VALUES(specialization),
+               phone = VALUES(phone),
+               email = VALUES(email),
+               clinic = VALUES(clinic),
+               address = VALUES(address),
+               status = VALUES(status),
+               updated_at = NOW()`,
+            [doc.id, doc.name || "", doc.specialization || "", doc.phone || "", doc.email || "", doc.clinic || "", doc.address || "", doc.status || "Active"]
+          ).catch(() => {});
+        }
+      } else if (collectionKey === "tests" && Array.isArray(data)) {
+        for (const t of data) {
+          if (!t || !t.id) continue;
+          await mysqlPool.query(
+            `INSERT INTO tests (id, name, category, unit, reference_range, price, status, parameters, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE
+               name = VALUES(name),
+               category = VALUES(category),
+               unit = VALUES(unit),
+               reference_range = VALUES(reference_range),
+               price = VALUES(price),
+               status = VALUES(status),
+               parameters = VALUES(parameters),
+               updated_at = NOW()`,
+            [t.id, t.name || "", t.category || "", t.unit || "", t.reference || t.reference_range || "", Number(t.price || 0), t.status || "Active", JSON.stringify(t.parameters || [])]
+          ).catch(() => {});
+        }
+      } else if (collectionKey === "patients" && Array.isArray(data)) {
+        for (const p of data) {
+          if (!p || !p.id) continue;
+          await mysqlPool.query(
+            `INSERT INTO patients (id, mrn, name, age, gender, phone, email, address, doctor_id, doctor_name, branch_id, tests, status, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE
+               mrn = VALUES(mrn),
+               name = VALUES(name),
+               age = VALUES(age),
+               gender = VALUES(gender),
+               phone = VALUES(phone),
+               email = VALUES(email),
+               address = VALUES(address),
+               doctor_id = VALUES(doctor_id),
+               doctor_name = VALUES(doctor_name),
+               branch_id = VALUES(branch_id),
+               tests = VALUES(tests),
+               status = VALUES(status),
+               updated_at = NOW()`,
+            [p.id, p.mrn || p.patient_code || "", p.name || p.fullName || "", String(p.age || ""), p.gender || "", p.phone || "", p.email || "", p.address || "", p.doctorId || "", p.doctorName || p.doctor || "", p.branchId || p.branch || "", JSON.stringify(p.tests || []), p.status || "Active"]
+          ).catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.error(`[MySQL] saveCollectionAsync error for ${collectionKey}:`, err.message);
+    }
+  }
+
+  return { success: true, version: lastDataVersion };
+}
+
+export async function getAllCollectionsAsync() {
+  const store = getAppStoreFromFile();
+  const result = { ...store, _version: lastDataVersion };
+
+  if (isMysqlConnected && mysqlPool) {
+    try {
+      const [rows] = await mysqlPool.query("SELECT collection_key, data_json, version FROM sync_store");
+      for (const row of rows) {
+        if (row.collection_key && row.data_json) {
+          try {
+            result[row.collection_key] = JSON.parse(row.data_json);
+          } catch {
+            // ignore JSON parse error
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[MySQL] getAllCollectionsAsync fallback to file store:", err.message);
+    }
+  }
+
+  return result;
+}
+
+export async function saveAllCollectionsAsync(bundle) {
+  bumpDataVersion();
+  const keys = Object.keys(bundle).filter((k) => !k.startsWith("_"));
+  for (const key of keys) {
+    await saveCollectionAsync(key, bundle[key]);
+  }
+  return { success: true, version: lastDataVersion };
+}
+
+// ---------------------------------------------------------------------------
+// Reminders DB Legacy Methods
+// ---------------------------------------------------------------------------
 export function getDb() {
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), "utf8");
@@ -318,11 +612,9 @@ export function saveDb(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
-// Async getDb supporting MySQL & File Fallback
 export async function getDbAsync() {
   if (isMysqlConnected && mysqlPool) {
     try {
-      // Settings
       const [settingsRows] = await mysqlPool.query("SELECT * FROM settings ORDER BY id DESC LIMIT 1");
       let settings = INITIAL_DATA.settings;
       if (settingsRows.length > 0) {
@@ -341,7 +633,6 @@ export async function getDbAsync() {
         };
       }
 
-      // Consents
       const [consentsRows] = await mysqlPool.query("SELECT * FROM consents ORDER BY consent_timestamp DESC");
       const consents = consentsRows.map((c) => ({
         patientId: c.patient_id,
@@ -352,7 +643,6 @@ export async function getDbAsync() {
         notes: c.notes || ""
       }));
 
-      // Reminders
       const [remindersRows] = await mysqlPool.query("SELECT * FROM reminders ORDER BY created_at DESC");
       const reminders = remindersRows.map((r) => ({
         id: r.id,
@@ -377,7 +667,6 @@ export async function getDbAsync() {
         updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString()
       }));
 
-      // Messages
       const [messagesRows] = await mysqlPool.query("SELECT * FROM messages ORDER BY created_at DESC");
       const messages = messagesRows.map((m) => ({
         id: m.id,
@@ -403,13 +692,11 @@ export async function getDbAsync() {
   return getDb();
 }
 
-// Async saveDb supporting MySQL & File Fallback
 export async function saveDbAsync(data) {
   saveDb(data);
 
   if (isMysqlConnected && mysqlPool) {
     try {
-      // Settings
       if (data.settings) {
         const s = data.settings;
         await mysqlPool.query(
@@ -428,66 +715,6 @@ export async function saveDbAsync(data) {
              updated_at = NOW()`,
           [s.phoneNumberId, s.businessAccountId, s.accessToken, s.templateName, s.templateLanguage, s.webhookVerifyToken, s.testMode, s.dailyCronTime, s.isActive]
         );
-      }
-
-      // Consents
-      if (Array.isArray(data.consents)) {
-        for (const c of data.consents) {
-          await mysqlPool.query(
-            `INSERT INTO consents (patient_id, opt_in, consent_timestamp, opt_out_timestamp, channel, notes)
-             VALUES (?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               opt_in = VALUES(opt_in),
-               opt_out_timestamp = VALUES(opt_out_timestamp),
-               notes = VALUES(notes)`,
-            [c.patientId, c.optIn, c.consentTimestamp || new Date(), c.optOutTimestamp || null, c.channel || "WhatsApp", c.notes || ""]
-          );
-        }
-      }
-
-      // Reminders
-      if (Array.isArray(data.reminders)) {
-        for (const r of data.reminders) {
-          await mysqlPool.query(
-            `INSERT INTO reminders (id, patient_id, patient_name, phone, previous_report_id, previous_test_date, next_reminder_date, test_list, status, opt_in, cycle_month, sent_at, delivered_at, read_at, failed_at, failure_reason, whatsapp_message_id, retry_count, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               status = VALUES(status),
-               next_reminder_date = VALUES(next_reminder_date),
-               opt_in = VALUES(opt_in),
-               cycle_month = VALUES(cycle_month),
-               sent_at = VALUES(sent_at),
-               delivered_at = VALUES(delivered_at),
-               read_at = VALUES(read_at),
-               failed_at = VALUES(failed_at),
-               failure_reason = VALUES(failure_reason),
-               whatsapp_message_id = VALUES(whatsapp_message_id),
-               retry_count = VALUES(retry_count),
-               updated_at = NOW()`,
-            [
-              r.id,
-              r.patientId,
-              r.patientName,
-              r.phone,
-              r.previousReportId,
-              r.previousTestDate || null,
-              r.nextReminderDate,
-              r.testList,
-              r.status,
-              r.optIn,
-              r.cycleMonth,
-              r.sentAt || null,
-              r.deliveredAt || null,
-              r.readAt || null,
-              r.failedAt || null,
-              r.failureReason || null,
-              r.whatsappMessageId || null,
-              r.retryCount || 0,
-              r.createdAt || new Date(),
-              r.updatedAt || new Date()
-            ]
-          );
-        }
       }
     } catch (err) {
       console.error("[MySQL] saveDbAsync error:", err.message);
