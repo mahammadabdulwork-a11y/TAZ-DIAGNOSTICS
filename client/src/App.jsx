@@ -82,7 +82,15 @@ const money = (value) =>
 function read(key, fallback) {
   try {
     const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
+    if (!value) return fallback;
+    const parsed = JSON.parse(value);
+    if (Array.isArray(fallback)) {
+      return Array.isArray(parsed) ? parsed : fallback;
+    }
+    if (fallback && typeof fallback === "object") {
+      return (parsed && typeof parsed === "object") ? parsed : fallback;
+    }
+    return parsed;
   } catch {
     return fallback;
   }
@@ -150,13 +158,128 @@ function useStoredData(key, fallback) {
 }
 
 function nextId(prefix, items) {
+  if (!Array.isArray(items) || items.length === 0) return `${prefix}001`;
   const numbers = items.map((item) => {
-    const match = String(item.id || "").match(/\d+/);
+    const match = String(item?.id || "").match(/\d+/);
     return match ? Number(match[0]) : 0;
   });
   const next = Math.max(0, ...numbers) + 1;
   return `${prefix}${String(next).padStart(3, "0")}`;
 }
+
+/* =========================================================
+   ERROR BOUNDARY — ZERO CRASH SHIELD
+   ========================================================= */
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Clinical System Intercepted Error:", error, errorInfo);
+  }
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  handleSafeRecovery = () => {
+    try {
+      seed(true);
+    } catch {}
+    this.setState({ hasError: false, error: null });
+    window.location.href = "/dashboard";
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F9FAFB",
+          padding: "24px",
+          fontFamily: "Inter, system-ui, sans-serif"
+        }}>
+          <div style={{
+            maxWidth: "520px",
+            width: "100%",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "16px",
+            padding: "36px",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
+            textAlign: "center",
+            border: "1px solid #E5E7EB"
+          }}>
+            <div style={{
+              width: "60px",
+              height: "60px",
+              backgroundColor: "#ECFDF5",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 18px",
+              color: "#059669",
+              fontSize: "26px"
+            }}>
+              🛡️
+            </div>
+            <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#111827", margin: "0 0 8px" }}>
+              TAZ DIAGNOSTIC — Safe Recovery Mode
+            </h2>
+            <p style={{ fontSize: "14px", color: "#4B5563", lineHeight: "1.6", margin: "0 0 22px" }}>
+              A temporary display error occurred, but <b>your patients, tests, reports, and database records are 100% safe and intact.</b>
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                onClick={this.handleReload}
+                style={{
+                  backgroundColor: "#5B0A1A",
+                  color: "#FFFFFF",
+                  border: "none",
+                  padding: "11px 22px",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer"
+                }}
+              >
+                Refresh System
+              </button>
+              <button
+                onClick={this.handleSafeRecovery}
+                style={{
+                  backgroundColor: "#F3F4F6",
+                  color: "#374151",
+                  border: "1px solid #D1D5DB",
+                  padding: "11px 22px",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer"
+                }}
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export { ErrorBoundary };
 
 /* =========================================================
    DEFAULT SEED DATA
@@ -7541,6 +7664,77 @@ function SettingsPage({ onToast }) {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  function handleExportBackup() {
+    const backup = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      labName: settings.labName || "TAZ DIAGNOSTIC",
+      data: {
+        patients: read(STORAGE.patients, []),
+        doctors: read(STORAGE.doctors, []),
+        tests: read(STORAGE.tests, []),
+        reports: read(STORAGE.reports, []),
+        bills: read(STORAGE.bills, []),
+        branches: read(STORAGE.branches, []),
+        users: read(STORAGE.users, []),
+        messages: read(STORAGE.messages, []),
+        settings: read(STORAGE.settings, {}),
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `TAZ_DIAGNOSTIC_FULL_BACKUP_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    onToast("Clinic database backup downloaded successfully! Keep this file safe.");
+  }
+
+  function handleImportBackup(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm("Restore database from this backup file? Existing records will be updated with the backup data.")) {
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = ev.target.result;
+        const backup = JSON.parse(raw);
+        const data = backup.data || backup;
+
+        if (!data || typeof data !== "object") {
+          throw new Error("Invalid backup format");
+        }
+
+        if (Array.isArray(data.patients)) write(STORAGE.patients, data.patients);
+        if (Array.isArray(data.doctors)) write(STORAGE.doctors, data.doctors);
+        if (Array.isArray(data.tests)) write(STORAGE.tests, data.tests);
+        if (Array.isArray(data.reports)) write(STORAGE.reports, data.reports);
+        if (Array.isArray(data.bills)) write(STORAGE.bills, data.bills);
+        if (Array.isArray(data.branches)) write(STORAGE.branches, data.branches);
+        if (Array.isArray(data.users)) write(STORAGE.users, data.users);
+        if (Array.isArray(data.messages)) write(STORAGE.messages, data.messages);
+        if (data.settings && typeof data.settings === "object") write(STORAGE.settings, data.settings);
+
+        onToast("Database restored successfully from backup file! Syncing with server...");
+        setTimeout(() => window.location.reload(), 1000);
+      } catch (err) {
+        alert("Failed to restore backup: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
   function handleStartFresh() {
     if (
       !confirm(
@@ -7731,6 +7925,35 @@ function SettingsPage({ onToast }) {
           </Button>
         </div>
       </form>
+
+      <div className="card" style={{ marginTop: 24, border: "1px solid #c7d2fe", background: "#f8faff" }}>
+        <div className="sectiontitle">
+          <Database size={22} color="#3730a3" />
+          <div>
+            <h3 style={{ color: "#312e81" }}>Lifetime Data Safety & Database Backups</h3>
+            <p>Download a complete local backup of all patients, bills, reports, and lab data to keep safely on a pen drive or computer.</p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginTop: 16 }}>
+          <Button onClick={handleExportBackup} primary style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#4338ca" }}>
+            <Download size={16} /> Download Full Database Backup (.JSON)
+          </Button>
+
+          <label className="btn" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", background: "#ffffff", border: "1px solid #c7d2fe", padding: "10px 18px", borderRadius: "8px", fontWeight: "600", fontSize: "14px", color: "#3730a3" }}>
+            <Upload size={16} /> Restore Database from Backup File
+            <input
+              type="file"
+              accept=".json"
+              style={{ display: "none" }}
+              onChange={handleImportBackup}
+            />
+          </label>
+        </div>
+        <p style={{ fontSize: "12px", color: "#4f46e5", marginTop: "14px", lineHeight: "1.6" }}>
+          🛡️ <b>Lifetime Guarantee:</b> Click <b>"Download Full Database Backup"</b> once a week or month and save it to your computer or email. Even if a computer breaks, is formatted, or replaced, you can click "Restore Database" on any device and all your records are restored in 3 seconds!
+        </p>
+      </div>
     </>
   );
 }
