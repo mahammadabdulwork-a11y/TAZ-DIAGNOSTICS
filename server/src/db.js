@@ -2,6 +2,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import mysql from "mysql2/promise";
+import {
+  DEFAULT_DOCTORS,
+  DEFAULT_TESTS,
+  DEFAULT_BRANCHES,
+  DEFAULT_USERS
+} from "./seedData.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -144,38 +150,64 @@ export function bumpDataVersion() {
 // File Store Helpers
 // ---------------------------------------------------------------------------
 function getAppStoreFromFile() {
+  const getInitialDefaultStore = () => ({
+    patients: [],
+    doctors: [...DEFAULT_DOCTORS],
+    tests: [...DEFAULT_TESTS],
+    reports: [],
+    bills: [],
+    messages: [],
+    branches: [...DEFAULT_BRANCHES],
+    users: [...DEFAULT_USERS],
+    settings: {
+      labName: "TAZ DIAGNOSTIC",
+      tagline: "ADVANCED CLINICAL LABORATORY & DIAGNOSTIC CENTRE",
+      phone: "+91 99887 76655",
+      email: "contact@tazdiagnostic.com",
+      address: "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh",
+      currency: "INR (₹)",
+      autoBackup: true,
+      darkMode: false,
+      whatsappReminders: true,
+      retestCycleDays: 30,
+      whatsappTemplateName: "taz_monthly_retest_reminder"
+    },
+    _version: Date.now()
+  });
+
   if (!fs.existsSync(APP_STORE_FILE)) {
-    const defaultStore = {
-      patients: [],
-      doctors: [],
-      tests: [],
-      reports: [],
-      bills: [],
-      messages: [],
-      branches: [],
-      users: [],
-      settings: null,
-      _version: Date.now()
-    };
+    const defaultStore = getInitialDefaultStore();
     fs.writeFileSync(APP_STORE_FILE, JSON.stringify(defaultStore, null, 2), "utf8");
     return defaultStore;
   }
   try {
     const raw = fs.readFileSync(APP_STORE_FILE, "utf8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    let mutated = false;
+    if (!parsed.doctors || parsed.doctors.length === 0) {
+      parsed.doctors = [...DEFAULT_DOCTORS];
+      mutated = true;
+    }
+    if (!parsed.tests || parsed.tests.length === 0) {
+      parsed.tests = [...DEFAULT_TESTS];
+      mutated = true;
+    }
+    if (!parsed.branches || parsed.branches.length === 0) {
+      parsed.branches = [...DEFAULT_BRANCHES];
+      mutated = true;
+    }
+    if (!parsed.users || parsed.users.length === 0) {
+      parsed.users = [...DEFAULT_USERS];
+      mutated = true;
+    }
+    if (mutated) {
+      fs.writeFileSync(APP_STORE_FILE, JSON.stringify(parsed, null, 2), "utf8");
+    }
+    return parsed;
   } catch {
-    return {
-      patients: [],
-      doctors: [],
-      tests: [],
-      reports: [],
-      bills: [],
-      messages: [],
-      branches: [],
-      users: [],
-      settings: null,
-      _version: Date.now()
-    };
+    const defaultStore = getInitialDefaultStore();
+    fs.writeFileSync(APP_STORE_FILE, JSON.stringify(defaultStore, null, 2), "utf8");
+    return defaultStore;
   }
 }
 
@@ -190,39 +222,45 @@ function saveAppStoreToFile(store) {
 // ---------------------------------------------------------------------------
 export async function initDb() {
   try {
-    const host = process.env.MYSQL_HOST || "127.0.0.1";
-    const port = parseInt(process.env.MYSQL_PORT || "3307", 10);
-    const user = process.env.MYSQL_USER || "root";
-    const password = process.env.MYSQL_PASSWORD || "";
-    const dbName = process.env.MYSQL_DATABASE || "taz_company";
+    const dbUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
 
-    // 1. Ensure Database exists
-    try {
-      const rootConn = await mysql.createConnection({
+    if (dbUrl) {
+      mysqlPool = mysql.createPool(dbUrl);
+    } else {
+      const host = process.env.MYSQL_HOST || "127.0.0.1";
+      const port = parseInt(process.env.MYSQL_PORT || "3307", 10);
+      const user = process.env.MYSQL_USER || "root";
+      const password = process.env.MYSQL_PASSWORD || "";
+      const dbName = process.env.MYSQL_DATABASE || "taz_company";
+
+      // 1. Ensure Database exists
+      try {
+        const rootConn = await mysql.createConnection({
+          host,
+          port,
+          user,
+          password,
+          connectTimeout: 4000
+        });
+        await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+        await rootConn.end();
+      } catch (dbCreateErr) {
+        // Continue to try direct pool connection
+      }
+
+      // 2. Connect Pool to the target Database
+      mysqlPool = mysql.createPool({
         host,
         port,
         user,
         password,
-        connectTimeout: 4000
+        database: dbName,
+        waitForConnections: true,
+        connectionLimit: 20,
+        queueLimit: 0,
+        connectTimeout: 5000
       });
-      await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
-      await rootConn.end();
-    } catch (dbCreateErr) {
-      // Continue to try direct pool connection
     }
-
-    // 2. Connect Pool to the target Database
-    mysqlPool = mysql.createPool({
-      host,
-      port,
-      user,
-      password,
-      database: dbName,
-      waitForConnections: true,
-      connectionLimit: 20,
-      queueLimit: 0,
-      connectTimeout: 5000
-    });
 
     const conn = await mysqlPool.getConnection();
     conn.release();

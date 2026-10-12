@@ -20,6 +20,31 @@ const REVERSE_STORAGE_MAP = Object.entries(STORAGE_KEY_MAP).reduce((acc, [col, k
   return acc;
 }, {});
 
+const DELETED_IDS_STORAGE_KEY = "taz_deleted_ids";
+
+export function getDeletedIdsMap() {
+  try {
+    const raw = localStorage.getItem(DELETED_IDS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function markItemDeleted(collection, id) {
+  if (!collection || !id) return;
+  const col = collection.replace("taz_company_", "");
+  const map = getDeletedIdsMap();
+  if (!map[col]) map[col] = [];
+  const strId = String(id);
+  if (!map[col].includes(strId)) {
+    map[col].push(strId);
+  }
+  try {
+    localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(map));
+  } catch {}
+}
+
 // Detect API base dynamically: works on Vercel, localhost, or LAN IP
 function getApiBase() {
   const envApi = import.meta.env?.VITE_API_BASE;
@@ -40,7 +65,6 @@ function getApiBase() {
   // Default to 24/7 Render Cloud Production Backend (for Vercel & Public Web)
   return "https://taz-diagnostics.onrender.com/api";
 }
-
 
 let currentDataVersion = 0;
 let isConnectedToServer = false;
@@ -73,12 +97,57 @@ function notifySyncListeners() {
 }
 
 /**
+ * Merge local collection with remote collection without data loss.
+ * Respects explicitly deleted items and retains local additions not yet synced to remote.
+ */
+function mergeCollectionWithRemote(colKey, localList, remoteList, deletedIds = []) {
+  if (!Array.isArray(remoteList)) return { merged: localList, missingInRemote: [] };
+  if (!Array.isArray(localList) || localList.length === 0) {
+    // Filter out locally deleted IDs from remote
+    const filteredRemote = remoteList.filter((item) => {
+      const id = String(item?.id || item?.code || "");
+      return !deletedIds.includes(id);
+    });
+    return { merged: filteredRemote, missingInRemote: [] };
+  }
+
+  const remoteMap = new Map();
+  const deletedSet = new Set(deletedIds.map(String));
+
+  remoteList.forEach((item) => {
+    if (!item) return;
+    const id = String(item.id || item.code || "");
+    if (id && !deletedSet.has(id)) {
+      remoteMap.set(id, item);
+    }
+  });
+
+  const merged = Array.from(remoteMap.values());
+  const missingInRemote = [];
+
+  // Look for any item that exists locally but not in remote
+  localList.forEach((item) => {
+    if (!item) return;
+    const id = String(item.id || item.code || "");
+    if (!id || deletedSet.has(id)) return;
+
+    if (!remoteMap.has(id)) {
+      merged.push(item);
+      missingInRemote.push(item);
+    }
+  });
+
+  return { merged, missingInRemote };
+}
+
+/**
  * Fetch all collections from central server and update localStorage
  */
 export async function pullAllFromBackend(force = false) {
   try {
     const apiBase = getApiBase();
     const res = await fetch(`${apiBase}/data/all/bundle`, {
+      cache: "no-store",
       headers: { Accept: "application/json" }
     });
 
@@ -90,41 +159,66 @@ export async function pullAllFromBackend(force = false) {
       currentDataVersion = result.version || Date.now();
 
       const serverData = result.data;
+      const deletedMap = getDeletedIdsMap();
       let hasChanges = false;
+      const collectionsToPush = [];
 
-      // Check if server is brand new (empty) while local has data -> push local to server
-      const isServerEmpty = !serverData.doctors || serverData.doctors.length === 0;
-      const localDocs = JSON.parse(localStorage.getItem(STORAGE_KEY_MAP.doctors) || "[]");
-
-      if (isServerEmpty && localDocs.length > 0) {
-        console.log("[Sync] Server has no records yet. Uploading local clinic data to central server...");
-        await pushAllToBackend();
-        notifySyncListeners();
-        return;
-      }
-
-      // Sync server collections into local storage
       Object.entries(STORAGE_KEY_MAP).forEach(([colKey, storageKey]) => {
         if (serverData[colKey] !== undefined && serverData[colKey] !== null) {
-          const currentLocal = localStorage.getItem(storageKey);
-          const serverStr = JSON.stringify(serverData[colKey]);
+          const currentLocalRaw = localStorage.getItem(storageKey);
+          let currentLocal = null;
+          try {
+            currentLocal = currentLocalRaw ? JSON.parse(currentLocalRaw) : null;
+          } catch {
+            currentLocal = null;
+          }
 
-          // If different or forced, update local storage
-          if (currentLocal !== serverStr) {
-            localStorage.setItem(storageKey, serverStr);
-            hasChanges = true;
+          if (Array.isArray(serverData[colKey])) {
+            const deletedForCol = deletedMap[colKey] || [];
+            const { merged, missingInRemote } = mergeCollectionWithRemote(
+              colKey,
+              currentLocal,
+              serverData[colKey],
+              deletedForCol
+            );
+
+            const mergedStr = JSON.stringify(merged);
+            if (currentLocalRaw !== mergedStr) {
+              localStorage.setItem(storageKey, mergedStr);
+              hasChanges = true;
+            }
+
+            // If local had unsynced records, queue for server upload
+            if (missingInRemote.length > 0) {
+              collectionsToPush.push({ storageKey, data: merged });
+            }
+          } else {
+            // Object data like settings
+            const serverStr = JSON.stringify(serverData[colKey]);
+            if (currentLocalRaw !== serverStr) {
+              localStorage.setItem(storageKey, serverStr);
+              hasChanges = true;
+            }
           }
         }
       });
 
       if (hasChanges || force) {
-        window.dispatchEvent(new Event("taz-company-update"));
+        window.dispatchEvent(
+          new CustomEvent("taz-company-update", { detail: { source: "pullAllFromBackend" } })
+        );
+      }
+
+      // Sync any missing local items back to server
+      if (collectionsToPush.length > 0) {
+        for (const item of collectionsToPush) {
+          syncCollectionToBackend(item.storageKey, item.data).catch(() => {});
+        }
       }
 
       notifySyncListeners();
     }
   } catch (err) {
-    // If backend is offline, application continues smoothly in local mode
     if (isConnectedToServer) {
       isConnectedToServer = false;
       notifySyncListeners();
@@ -154,7 +248,8 @@ export async function pushAllToBackend() {
     const res = await fetch(`${apiBase}/data/all/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bundle)
+      body: JSON.stringify(bundle),
+      keepalive: true
     });
 
     if (res.ok) {
@@ -162,10 +257,12 @@ export async function pushAllToBackend() {
       isConnectedToServer = true;
       if (result.version) currentDataVersion = result.version;
       notifySyncListeners();
+      return true;
     }
   } catch (err) {
     console.warn("[Sync] pushAllToBackend error:", err.message);
   }
+  return false;
 }
 
 /**
@@ -173,14 +270,15 @@ export async function pushAllToBackend() {
  */
 export async function syncCollectionToBackend(storageKey, value) {
   const colName = REVERSE_STORAGE_MAP[storageKey] || storageKey.replace("taz_company_", "");
-  if (!colName) return;
+  if (!colName) return false;
 
   try {
     const apiBase = getApiBase();
     const res = await fetch(`${apiBase}/data/${colName}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(value)
+      body: JSON.stringify(value),
+      keepalive: true
     });
 
     if (res.ok) {
@@ -188,12 +286,40 @@ export async function syncCollectionToBackend(storageKey, value) {
       isConnectedToServer = true;
       if (result.version) currentDataVersion = result.version;
       notifySyncListeners();
+      return true;
     }
   } catch (err) {
-    // Quietly fallback: offline mode
     isConnectedToServer = false;
     notifySyncListeners();
   }
+  return false;
+}
+
+/**
+ * Delete single item from central backend
+ */
+export async function deleteItemFromBackend(storageKey, id) {
+  const colName = REVERSE_STORAGE_MAP[storageKey] || storageKey.replace("taz_company_", "");
+  if (!colName || !id) return false;
+
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/data/${colName}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      keepalive: true
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      isConnectedToServer = true;
+      if (result.version) currentDataVersion = result.version;
+      notifySyncListeners();
+      return true;
+    }
+  } catch (err) {
+    console.warn("[Sync] deleteItemFromBackend error:", err.message);
+  }
+  return false;
 }
 
 /**
@@ -201,7 +327,7 @@ export async function syncCollectionToBackend(storageKey, value) {
  */
 let syncIntervalTimer = null;
 
-export function startLiveSync(pollIntervalMs = 4000) {
+export function startLiveSync(pollIntervalMs = 2500) {
   // Initial immediate fetch
   pullAllFromBackend();
 
@@ -222,7 +348,6 @@ export function startLiveSync(pollIntervalMs = 4000) {
 
         // If another PC modified data, pull the latest bundle!
         if (data.version && data.version !== currentDataVersion) {
-          console.log("[Sync] Data change detected from another PC! Updating local view...");
           await pullAllFromBackend(true);
         } else {
           notifySyncListeners();
@@ -241,14 +366,17 @@ export function startLiveSync(pollIntervalMs = 4000) {
     }
   }, pollIntervalMs);
 
-  // Also sync immediately when user switches tabs or focuses the window
-  const onFocusHandler = () => {
+  // Sync immediately when user switches tabs, focuses window, or un-minimizes
+  const onSyncTrigger = () => {
     pullAllFromBackend(true);
   };
-  window.addEventListener("focus", onFocusHandler);
+
+  window.addEventListener("focus", onSyncTrigger);
+  document.addEventListener("visibilitychange", onSyncTrigger);
 
   return () => {
     if (syncIntervalTimer) clearInterval(syncIntervalTimer);
-    window.removeEventListener("focus", onFocusHandler);
+    window.removeEventListener("focus", onSyncTrigger);
+    document.removeEventListener("visibilitychange", onSyncTrigger);
   };
 }

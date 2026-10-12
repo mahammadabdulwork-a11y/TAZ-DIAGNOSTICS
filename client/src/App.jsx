@@ -48,6 +48,8 @@ import { TECHNICIAN_SIGNATURE_SRC } from "./technicianSignatureData.js";
 import {
   startLiveSync,
   syncCollectionToBackend,
+  deleteItemFromBackend,
+  markItemDeleted,
   getSyncStatus,
   onSyncStatusChange,
 } from "./services/dataSyncService.js";
@@ -87,11 +89,64 @@ function read(key, fallback) {
 }
 
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-  window.dispatchEvent(new Event("taz-company-update"));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn("Storage write error:", err);
+  }
+  window.dispatchEvent(
+    new CustomEvent("taz-company-update", { detail: { key, value } })
+  );
   if (key && key !== STORAGE.session) {
     syncCollectionToBackend(key, value);
   }
+}
+
+function writeLocal(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn("Storage writeLocal error:", err);
+  }
+  window.dispatchEvent(
+    new CustomEvent("taz-company-update", { detail: { key, value } })
+  );
+}
+
+function useStoredData(key, fallback) {
+  const [data, setData] = useState(() => read(key, fallback));
+
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (!e?.detail?.key || e.detail.key === key) {
+        setData(read(key, fallback));
+      }
+    };
+
+    const handleStorage = (e) => {
+      if (!e.key || e.key === key) {
+        setData(read(key, fallback));
+      }
+    };
+
+    window.addEventListener("taz-company-update", handleUpdate);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("taz-company-update", handleUpdate);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [key]);
+
+  const updateData = (nextVal) => {
+    setData((prev) => {
+      const resolved = typeof nextVal === "function" ? nextVal(prev) : nextVal;
+      write(key, resolved);
+      return resolved;
+    });
+  };
+
+  return [data, updateData];
 }
 
 function nextId(prefix, items) {
@@ -937,34 +992,34 @@ const DEFAULT_BILLS = [];
 const DEFAULT_MESSAGES = [];
 
 function seed(force = false) {
-  const existingDocs = read(STORAGE.doctors, []);
+  const existingDocs = read(STORAGE.doctors, null);
   if (force || !existingDocs || !existingDocs.length) {
-    write(STORAGE.doctors, DEFAULT_DOCTORS);
+    writeLocal(STORAGE.doctors, DEFAULT_DOCTORS);
   }
   
-  const existingTests = read(STORAGE.tests, []);
+  const existingTests = read(STORAGE.tests, null);
   if (force || !existingTests || !existingTests.length) {
-    write(STORAGE.tests, DEFAULT_TESTS);
-    write("taz_tests_catalog_v", 4);
+    writeLocal(STORAGE.tests, DEFAULT_TESTS);
+    writeLocal("taz_tests_catalog_v", 4);
   }
 
   // Always ensure branches exist
-  const existingBranches = read(STORAGE.branches, []);
+  const existingBranches = read(STORAGE.branches, null);
   if (force || !existingBranches || !existingBranches.length) {
-    write(STORAGE.branches, DEFAULT_BRANCHES);
-    write("taz_branches_v", 3);
+    writeLocal(STORAGE.branches, DEFAULT_BRANCHES);
+    writeLocal("taz_branches_v", 3);
   }
 
   if (force || !localStorage.getItem(STORAGE.users)) {
-    write(STORAGE.users, DEFAULT_USERS);
-    write("taz_users_v", 2);
+    writeLocal(STORAGE.users, DEFAULT_USERS);
+    writeLocal("taz_users_v", 2);
   }
 
   if (force && !localStorage.getItem(STORAGE.patients)) {
-    write(STORAGE.patients, []);
-    write(STORAGE.reports, []);
-    write(STORAGE.bills, []);
-    write(STORAGE.messages, []);
+    writeLocal(STORAGE.patients, []);
+    writeLocal(STORAGE.reports, []);
+    writeLocal(STORAGE.bills, []);
+    writeLocal(STORAGE.messages, []);
   }
   const storedSettings = read(STORAGE.settings, null);
   const correctAddress = "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh";
@@ -979,7 +1034,7 @@ function seed(force = false) {
     !storedSettings.address ||
     !storedSettings.address.includes("Tallapudi")
   ) {
-    write(STORAGE.settings, {
+    writeLocal(STORAGE.settings, {
       ...(storedSettings || {}),
       labName: "TAZ DIAGNOSTIC",
       phone: correctPhone,
@@ -1505,11 +1560,11 @@ function Login({ onLogin }) {
    ========================================================= */
 
 function Dashboard({ navigate, onToast }) {
-  const patients = read(STORAGE.patients, DEFAULT_PATIENTS);
-  const tests = read(STORAGE.tests, DEFAULT_TESTS);
-  const reports = read(STORAGE.reports, DEFAULT_REPORTS);
-  const bills = read(STORAGE.bills, DEFAULT_BILLS);
-  const branches = read(STORAGE.branches, DEFAULT_BRANCHES);
+  const [patients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
+  const [tests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
+  const [reports] = useStoredData(STORAGE.reports, DEFAULT_REPORTS);
+  const [bills] = useStoredData(STORAGE.bills, DEFAULT_BILLS);
+  const [branches] = useStoredData(STORAGE.branches, DEFAULT_BRANCHES);
 
   const revenue = bills.reduce((sum, bill) => sum + Number(bill.paid || 0), 0);
   const pending = reports.filter((r) => r.status !== "Completed").length;
@@ -2094,10 +2149,10 @@ function ManageTestsModal({ patient, tests, onClose, onSave }) {
    ========================================================= */
 
 function PatientEntry({ navigate, onToast }) {
-  const doctors = read(STORAGE.doctors, DEFAULT_DOCTORS);
-  const tests = read(STORAGE.tests, DEFAULT_TESTS);
-  const branches = read(STORAGE.branches, DEFAULT_BRANCHES);
-  const patients = read(STORAGE.patients, DEFAULT_PATIENTS);
+  const [doctors] = useStoredData(STORAGE.doctors, DEFAULT_DOCTORS);
+  const [tests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
+  const [branches] = useStoredData(STORAGE.branches, DEFAULT_BRANCHES);
+  const [patients, setPatients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
 
   const [form, setForm] = useState({
     name: "",
@@ -2648,10 +2703,8 @@ function PatientEntry({ navigate, onToast }) {
    ========================================================= */
 
 function Patients({ navigate, onToast }) {
-  const [patients, setPatients] = useState(() =>
-    read(STORAGE.patients, DEFAULT_PATIENTS)
-  );
-  const tests = read(STORAGE.tests, DEFAULT_TESTS);
+  const [patients, setPatients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
+  const [tests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [editingPatient, setEditingPatient] = useState(null);
@@ -2665,9 +2718,10 @@ function Patients({ navigate, onToast }) {
   );
 
   function remove(id) {
+    markItemDeleted("patients", id);
+    deleteItemFromBackend(STORAGE.patients, id);
     const next = patients.filter((patient) => patient.id !== id);
     setPatients(next);
-    write(STORAGE.patients, next);
     setConfirmDelete(null);
     onToast("Patient record deleted.");
   }
@@ -3059,9 +3113,7 @@ function Patients({ navigate, onToast }) {
    ========================================================= */
 
 function Doctors({ onToast }) {
-  const [doctors, setDoctors] = useState(() =>
-    read(STORAGE.doctors, DEFAULT_DOCTORS)
-  );
+  const [doctors, setDoctors] = useStoredData(STORAGE.doctors, DEFAULT_DOCTORS);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
@@ -3083,29 +3135,29 @@ function Doctors({ onToast }) {
     e.preventDefault();
     if (!form.name || !form.specialization) return;
 
-    const next = [
-      ...doctors,
-      {
-        id: nextId("DOC", doctors),
-        ...form,
-        status: "Active",
-      },
-    ];
+    const newDoc = {
+      id: nextId("DOC", doctors),
+      name: form.name.trim(),
+      specialization: form.specialization.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      status: "Active",
+      updatedAt: new Date().toISOString()
+    };
+    const next = [...doctors, newDoc];
     setDoctors(next);
-    write(STORAGE.doctors, next);
     setForm({ name: "", specialization: "", phone: "", email: "" });
     setShowAdd(false);
-    onToast(`Doctor ${form.name} added successfully!`);
+    onToast(`Doctor ${newDoc.name} (${newDoc.id}) added & saved!`);
   }
 
   function saveEdit(e) {
     e.preventDefault();
     if (!editingDoctor) return;
     const next = doctors.map((d) =>
-      d.id === editingDoctor.id ? editingDoctor : d
+      d.id === editingDoctor.id ? { ...editingDoctor, updatedAt: new Date().toISOString() } : d
     );
     setDoctors(next);
-    write(STORAGE.doctors, next);
     setEditingDoctor(null);
     onToast(`Doctor ${editingDoctor.name} updated!`);
   }
@@ -3113,19 +3165,19 @@ function Doctors({ onToast }) {
   function toggleStatus(id) {
     const next = doctors.map((d) =>
       d.id === id
-        ? { ...d, status: d.status === "Active" ? "Inactive" : "Active" }
+        ? { ...d, status: d.status === "Active" ? "Inactive" : "Active", updatedAt: new Date().toISOString() }
         : d
     );
     setDoctors(next);
-    write(STORAGE.doctors, next);
     onToast("Doctor status changed.");
   }
 
   function remove(id) {
     if (!confirm("Are you sure you want to remove this doctor?")) return;
+    markItemDeleted("doctors", id);
+    deleteItemFromBackend(STORAGE.doctors, id);
     const next = doctors.filter((d) => d.id !== id);
     setDoctors(next);
-    write(STORAGE.doctors, next);
     onToast("Doctor removed.");
   }
 
@@ -3355,7 +3407,7 @@ function Doctors({ onToast }) {
    ========================================================= */
 
 function TestManagement({ navigate, onToast }) {
-  const [tests, setTests] = useState(() => read(STORAGE.tests, DEFAULT_TESTS));
+  const [tests, setTests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [editingTest, setEditingTest] = useState(null);
@@ -3386,18 +3438,19 @@ function TestManagement({ navigate, onToast }) {
         ? {
             ...test,
             status: test.status === "Active" ? "Inactive" : "Active",
+            updatedAt: new Date().toISOString()
           }
         : test
     );
     setTests(next);
-    write(STORAGE.tests, next);
     onToast("Test availability toggled.");
   }
 
   function remove(id) {
+    markItemDeleted("tests", id);
+    deleteItemFromBackend(STORAGE.tests, id);
     const next = tests.filter((t) => t.id !== id);
     setTests(next);
-    write(STORAGE.tests, next);
     setConfirmDelete(null);
     onToast("Test removed from catalog.");
   }
@@ -3405,9 +3458,8 @@ function TestManagement({ navigate, onToast }) {
   function saveEdit(e) {
     e.preventDefault();
     if (!editingTest) return;
-    const next = tests.map((t) => (t.id === editingTest.id ? editingTest : t));
+    const next = tests.map((t) => (t.id === editingTest.id ? { ...editingTest, updatedAt: new Date().toISOString() } : t));
     setTests(next);
-    write(STORAGE.tests, next);
     setEditingTest(null);
     onToast(`Test "${editingTest.name}" updated successfully!`);
   }
@@ -3669,7 +3721,7 @@ function TestManagement({ navigate, onToast }) {
    ========================================================= */
 
 function TestMaster({ onToast }) {
-  const [tests, setTests] = useState(() => read(STORAGE.tests, DEFAULT_TESTS));
+  const [tests, setTests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
   const [show, setShow] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
 
@@ -3685,20 +3737,22 @@ function TestMaster({ onToast }) {
     e.preventDefault();
     if (!form.name) return;
 
-    const next = [
-      ...tests,
-      {
-        id: nextId("TST", tests),
-        ...form,
-        price: Number(form.price || 0),
-        status: "Active",
-      },
-    ];
+    const newTest = {
+      id: nextId("TST", tests),
+      name: form.name.trim(),
+      category: form.category,
+      unit: form.unit.trim(),
+      reference: form.reference.trim(),
+      price: Number(form.price || 0),
+      status: "Active",
+      updatedAt: new Date().toISOString()
+    };
+
+    const next = [...tests, newTest];
     setTests(next);
-    write(STORAGE.tests, next);
     setForm({ name: "", category: "Clinical Pathology", unit: "", reference: "", price: "" });
     setShow(false);
-    onToast(`Test ${form.name} created successfully!`);
+    onToast(`Test ${newTest.name} (${newTest.id}) created & saved!`);
   }
 
   function saveEdit(e) {
@@ -3707,20 +3761,20 @@ function TestMaster({ onToast }) {
 
     const next = tests.map((t) =>
       t.id === editingTest.id
-        ? { ...editingTest, price: Number(editingTest.price || 0) }
+        ? { ...editingTest, price: Number(editingTest.price || 0), updatedAt: new Date().toISOString() }
         : t
     );
     setTests(next);
-    write(STORAGE.tests, next);
     setEditingTest(null);
     onToast(`Test ${editingTest.name} updated successfully!`);
   }
 
   function remove(id) {
     if (!confirm("Are you sure you want to delete this test?")) return;
+    markItemDeleted("tests", id);
+    deleteItemFromBackend(STORAGE.tests, id);
     const next = tests.filter((t) => t.id !== id);
     setTests(next);
-    write(STORAGE.tests, next);
     onToast("Test deleted.");
   }
 
@@ -3967,17 +4021,11 @@ function TestMaster({ onToast }) {
    ========================================================= */
 
 function PatientHistory({ navigate, onToast }) {
-  const [patients, setPatients] = useState(() =>
-    read(STORAGE.patients, DEFAULT_PATIENTS)
-  );
-  const [reports, setReports] = useState(() =>
-    read(STORAGE.reports, DEFAULT_REPORTS)
-  );
-  const [bills, setBills] = useState(() =>
-    read(STORAGE.bills, DEFAULT_BILLS)
-  );
-  const tests = read(STORAGE.tests, DEFAULT_TESTS);
-  const settings = read(STORAGE.settings, {
+  const [patients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
+  const [reports] = useStoredData(STORAGE.reports, DEFAULT_REPORTS);
+  const [bills] = useStoredData(STORAGE.bills, DEFAULT_BILLS);
+  const [tests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
+  const [settings] = useStoredData(STORAGE.settings, {
     labName: "TAZ DIAGNOSTIC",
     phone: "9440985131",
     email: "tazdiagnostic@gmail.com",
@@ -4644,15 +4692,11 @@ function formatLabDate(dateStr) {
 }
 
 function Reports({ onToast, navigate, route }) {
-  const [patients, setPatients] = useState(() =>
-    read(STORAGE.patients, DEFAULT_PATIENTS)
-  );
+  const [patients, setPatients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
   const [showManageTestsModal, setShowManageTestsModal] = useState(false);
-  const tests = read(STORAGE.tests, DEFAULT_TESTS);
-  const [reports, setReports] = useState(() =>
-    read(STORAGE.reports, DEFAULT_REPORTS)
-  );
-  const settings = read(STORAGE.settings, {
+  const [tests] = useStoredData(STORAGE.tests, DEFAULT_TESTS);
+  const [reports, setReports] = useStoredData(STORAGE.reports, DEFAULT_REPORTS);
+  const [settings] = useStoredData(STORAGE.settings, {
     labName: "TAZ DIAGNOSTIC",
     phone: "9440985131",
     email: "tazdiagnostic@gmail.com",
@@ -6092,10 +6136,8 @@ function Reports({ onToast, navigate, route }) {
    ========================================================= */
 
 function Messages({ onToast }) {
-  const patients = read(STORAGE.patients, DEFAULT_PATIENTS);
-  const [messages, setMessages] = useState(() =>
-    read(STORAGE.messages, DEFAULT_MESSAGES)
-  );
+  const [patients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
+  const [messages, setMessages] = useStoredData(STORAGE.messages, DEFAULT_MESSAGES);
 
   const [filter, setFilter] = useState("All");
   const [showCompose, setShowCompose] = useState(false);
@@ -6483,8 +6525,8 @@ function Messages({ onToast }) {
    ========================================================= */
 
 function Billing({ onToast }) {
-  const patients = read(STORAGE.patients, DEFAULT_PATIENTS);
-  const [bills, setBills] = useState(() => read(STORAGE.bills, DEFAULT_BILLS));
+  const [patients] = useStoredData(STORAGE.patients, DEFAULT_PATIENTS);
+  const [bills, setBills] = useStoredData(STORAGE.bills, DEFAULT_BILLS);
   const [filter, setFilter] = useState("All");
 
   const [showCreateBill, setShowCreateBill] = useState(false);
@@ -7032,9 +7074,7 @@ function Analytics({ onToast }) {
    ========================================================= */
 
 function Branches({ onToast }) {
-  const [branches, setBranches] = useState(() =>
-    read(STORAGE.branches, DEFAULT_BRANCHES)
-  );
+  const [branches, setBranches] = useStoredData(STORAGE.branches, DEFAULT_BRANCHES);
   const [showAdd, setShowAdd] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
 
@@ -7051,7 +7091,6 @@ function Branches({ onToast }) {
         : b
     );
     setBranches(next);
-    write(STORAGE.branches, next);
     onToast("Branch status updated.");
   }
 
@@ -7068,7 +7107,6 @@ function Branches({ onToast }) {
       },
     ];
     setBranches(next);
-    write(STORAGE.branches, next);
     setForm({ name: "", address: "", phone: "" });
     setShowAdd(false);
     onToast(`Branch ${form.name} created successfully!`);
@@ -7082,7 +7120,6 @@ function Branches({ onToast }) {
       b.id === editingBranch.id ? editingBranch : b
     );
     setBranches(next);
-    write(STORAGE.branches, next);
     setEditingBranch(null);
     onToast(`Branch ${editingBranch.name} updated!`);
   }
@@ -7277,7 +7314,7 @@ function Branches({ onToast }) {
    ========================================================= */
 
 function UsersPage({ session, onToast }) {
-  const [users, setUsers] = useState(() => read(STORAGE.users, DEFAULT_USERS));
+  const [users, setUsers] = useStoredData(STORAGE.users, DEFAULT_USERS);
   const [showAdd, setShowAdd] = useState(false);
 
   const [form, setForm] = useState({
@@ -7297,7 +7334,6 @@ function UsersPage({ session, onToast }) {
         : user
     );
     setUsers(next);
-    write(STORAGE.users, next);
     onToast("User account status updated.");
   }
 
@@ -7319,7 +7355,6 @@ function UsersPage({ session, onToast }) {
       },
     ];
     setUsers(next);
-    write(STORAGE.users, next);
     setForm({ name: "", username: "", password: "", role: "Lab Technician" });
     setShowAdd(false);
     onToast(`User account ${form.username} created!`);
@@ -7487,22 +7522,20 @@ function UsersPage({ session, onToast }) {
    ========================================================= */
 
 function SettingsPage({ onToast }) {
-  const [settings, setSettings] = useState(() =>
-    read(STORAGE.settings, {
-      labName: "TAZ DIAGNOSTIC",
-      phone: "9440985131",
-      email: "tazdiagnostic@gmail.com",
-      address: "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh",
-      footerNote:
-        "This laboratory report is generated electronically. Please consult your physician for clinical interpretation.",
-    })
-  );
+  const [settings, setSettings] = useStoredData(STORAGE.settings, {
+    labName: "TAZ DIAGNOSTIC",
+    phone: "9440985131",
+    email: "tazdiagnostic@gmail.com",
+    address: "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh",
+    footerNote:
+      "This laboratory report is generated electronically. Please consult your physician for clinical interpretation.",
+  });
 
   const [saved, setSaved] = useState(false);
 
   function save(e) {
     e.preventDefault();
-    write(STORAGE.settings, settings);
+    setSettings(settings);
     setSaved(true);
     onToast("System settings saved successfully!");
     setTimeout(() => setSaved(false), 2000);

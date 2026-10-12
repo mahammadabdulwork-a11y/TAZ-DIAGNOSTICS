@@ -1,0 +1,705 @@
+export const DEFAULT_DOCTORS = [
+  {
+    "id": "DOC001",
+    "name": "Dr. Ahmed Khan",
+    "specialization": "Consultant Physician",
+    "phone": "9876543210",
+    "email": "ahmed@tazdiagnostic.com",
+    "status": "Active"
+  },
+  {
+    "id": "DOC002",
+    "name": "Dr. Ananya Rao",
+    "specialization": "General Physician",
+    "phone": "9876501234",
+    "email": "ananya@tazdiagnostic.com",
+    "status": "Active"
+  },
+  {
+    "id": "DOC003",
+    "name": "Dr. Rahul Mehta",
+    "specialization": "Cardiologist",
+    "phone": "9876505678",
+    "email": "rahul@tazdiagnostic.com",
+    "status": "Active"
+  },
+  {
+    "id": "DOC004",
+    "name": "Dr. Priya Sharma",
+    "specialization": "Pathologist",
+    "phone": "9988776655",
+    "email": "priya@tazdiagnostic.com",
+    "status": "Active"
+  }
+];
+
+export const DEFAULT_TESTS = [
+  {
+    "id": "TST001",
+    "name": "H.B.",
+    "category": "Clinical Pathology",
+    "unit": "g/dL",
+    "reference": "Male: 13.0 - 17.0, Female: 12.0 - 15.0",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST002",
+    "name": "TRBC",
+    "category": "Clinical Pathology",
+    "unit": "mil/cu.mm",
+    "reference": "4.5 - 5.5 mil/cu.mm",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST003",
+    "name": "TWBC",
+    "category": "Clinical Pathology",
+    "unit": "/cu.mm",
+    "reference": "4,000 - 11,000 /cu.mm",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST004",
+    "name": "Platelet Count",
+    "category": "Clinical Pathology",
+    "unit": "Lakhs/cu.mm",
+    "reference": "1.5 - 4.5 Lakhs/cu.mm",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST005",
+    "name": "DC Count",
+    "category": "Clinical Pathology",
+    "unit": "%",
+    "reference": "Differential Leucocyte Count",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST006",
+    "name": "Polymorphs",
+    "category": "Clinical Pathology",
+    "unit": "%",
+    "reference": "40 - 75 %",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST007",
+    "name": "Lymphocytes",
+    "category": "Clinical Pathology",
+    "unit": "%",
+    "reference": "20 - 45 %",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST008",
+    "name": "Eosinophils",
+    "category": "Clinical Pathology",
+    "unit": "%",
+    "reference": "1 - 6 %",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST009",
+    "name": "Monocytes",
+    "category": "Clinical Pathology",
+    "unit": "%",
+    "reference": "2 - 8 %",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST010",
+    "name": "ESR",
+    "category": "Clinical Pathology",
+    "unit": "mm/1st hr",
+    "reference": "Male: 0 - 15, Female: 0 - 20 (Westergren)",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST011",
+    "name": "Bleeding Time",
+    "category": "Clinical Pathology",
+    "unit": "min:sec",
+    "reference": "2 - 7 mins (Duke's method)",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST012",
+    "name": "Clotting Time",
+    "category": "Clinical Pathology",
+    "unit": "min:sec",
+    "reference": "3 - 8 mins (Lee-White method)",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST013",
+    "name": "MP",
+    "category": "Clinical Pathology",
+    "unit": "Smear Examination",
+    "reference": "Negative / Not Seen",
+    "price": 150,
+    "status": "Active"
+  },
+  {
+    "id": "TST014",
+    "name": "MF",
+    "category": "Clinical Pathology",
+    "unit": "Smear Examination",
+    "reference": "Negative / Not Seen",
+    "price": 200,
+    "status": "Active"
+  },
+  {
+    "id": "TST015",
+    "name": "Blood Group",
+    "category": "Clinical Pathology",
+    "unit": "Agglutination",
+    "reference": "A / B / AB / O",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST016",
+    "name": "Rh Type",
+    "category": "Clinical Pathology",
+    "unit": "Agglutination",
+    "reference": "Positive / Negative",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST017",
+    "name": "R.A. Test",
+    "category": "Clinical Pathology",
+    "unit": "IU/mL",
+    "reference": "< 20 IU/mL (Negative)",
+    "price": 200,
+    "status": "Active"
+  },
+  {
+    "id": "TST018",
+    "name": "VDRL",
+    "category": "Clinical Pathology",
+    "unit": "Qualitative",
+    "reference": "Non-Reactive",
+    "price": 200,
+    "status": "Active"
+  },
+  {
+    "id": "TST019",
+    "name": "Widal Test",
+    "category": "Clinical Pathology",
+    "unit": "Titer",
+    "reference": "S. Typhi 'O' & 'H' < 1:80",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST020",
+    "name": "OT",
+    "category": "Clinical Pathology",
+    "unit": "Titer",
+    "reference": "< 1:80 (Negative)",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST021",
+    "name": "HT",
+    "category": "Clinical Pathology",
+    "unit": "Titer",
+    "reference": "< 1:80 (Negative)",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST022",
+    "name": "HA",
+    "category": "Clinical Pathology",
+    "unit": "Titer",
+    "reference": "< 1:80 (Negative)",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST023",
+    "name": "HB",
+    "category": "Clinical Pathology",
+    "unit": "Titer",
+    "reference": "< 1:80 (Negative)",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST024",
+    "name": "Mantoux Test",
+    "category": "Clinical Pathology",
+    "unit": "mm (induration)",
+    "reference": "< 5 mm: Negative, > 10 mm: Positive",
+    "price": 200,
+    "status": "Active"
+  },
+  {
+    "id": "TST025",
+    "name": "Sugar",
+    "category": "Urine Examinations",
+    "unit": "Qualitative",
+    "reference": "Nil / Negative",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST026",
+    "name": "Albumin",
+    "category": "Urine Examinations",
+    "unit": "Qualitative",
+    "reference": "Nil / Negative",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST027",
+    "name": "Bile Salts",
+    "category": "Urine Examinations",
+    "unit": "Qualitative",
+    "reference": "Negative / Not Detected",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST028",
+    "name": "Bile Pigments",
+    "category": "Urine Examinations",
+    "unit": "Qualitative",
+    "reference": "Negative / Not Detected",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST029",
+    "name": "Pus Cells",
+    "category": "Urine Examinations",
+    "unit": "/HPF",
+    "reference": "0 - 4 /HPF",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST030",
+    "name": "RBC",
+    "category": "Urine Examinations",
+    "unit": "/HPF",
+    "reference": "Nil / Occasional",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST031",
+    "name": "Casts",
+    "category": "Urine Examinations",
+    "unit": "/LPF",
+    "reference": "Not Seen / Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST032",
+    "name": "Crystals",
+    "category": "Urine Examinations",
+    "unit": "Microscopy",
+    "reference": "Not Seen / Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST033",
+    "name": "WBC",
+    "category": "Urine Examinations",
+    "unit": "/HPF",
+    "reference": "0 - 2 /HPF",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST034",
+    "name": "Epithelial Cells",
+    "category": "Urine Examinations",
+    "unit": "/HPF",
+    "reference": "0 - 3 /HPF",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST035",
+    "name": "Others",
+    "category": "Urine Examinations",
+    "unit": "Examination",
+    "reference": "Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST036",
+    "name": "Pregnancy Test",
+    "category": "Urine Examinations",
+    "unit": "Qualitative",
+    "reference": "Negative",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST037",
+    "name": "Serum Glucose (F)",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "70 - 100",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST038",
+    "name": "Serum Glucose (R)",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "70 - 140",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST039",
+    "name": "Serum Glucose (PP)",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "< 140",
+    "price": 50,
+    "status": "Active"
+  },
+  {
+    "id": "TST040",
+    "name": "Urea",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "15 - 40",
+    "price": 150,
+    "status": "Active"
+  },
+  {
+    "id": "TST041",
+    "name": "Creatinine",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "Male: 0.7 - 1.3, Female: 0.6 - 1.1",
+    "price": 150,
+    "status": "Active"
+  },
+  {
+    "id": "TST042",
+    "name": "Cholesterol",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "Desirable: < 200",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST043",
+    "name": "Bilirubin Total",
+    "category": "Bio Chemistry",
+    "unit": "mg/dL",
+    "reference": "0.2 - 1.2",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST044",
+    "name": "Vanden Bergh Reaction",
+    "category": "Bio Chemistry",
+    "unit": "Reaction",
+    "reference": "Negative / Indirect",
+    "price": 100,
+    "status": "Active"
+  },
+  {
+    "id": "TST045",
+    "name": "HIV TRI DOT 1 & 2 Method",
+    "category": "Bio Chemistry",
+    "unit": "Qualitative",
+    "reference": "Non-Reactive",
+    "price": 300,
+    "status": "Active"
+  },
+  {
+    "id": "TST046",
+    "name": "HIV-1 Positive",
+    "category": "Bio Chemistry",
+    "unit": "Qualitative",
+    "reference": "Non-Reactive",
+    "price": 300,
+    "status": "Active"
+  },
+  {
+    "id": "TST047",
+    "name": "HIV-2 Positive",
+    "category": "Bio Chemistry",
+    "unit": "Qualitative",
+    "reference": "Non-Reactive",
+    "price": 300,
+    "status": "Active"
+  },
+  {
+    "id": "TST048",
+    "name": "HBsAg",
+    "category": "Bio Chemistry",
+    "unit": "Qualitative",
+    "reference": "Non-Reactive",
+    "price": 300,
+    "status": "Active"
+  },
+  {
+    "id": "TST049",
+    "name": "Motion Examination",
+    "category": "Motion Examination",
+    "unit": "Routine",
+    "reference": "Normal / Semisolid",
+    "price": 300,
+    "status": "Active"
+  },
+  {
+    "id": "TST050",
+    "name": "Mucus",
+    "category": "Motion Examination",
+    "unit": "Macroscopy",
+    "reference": "Not Seen / Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST051",
+    "name": "Occult Blood",
+    "category": "Motion Examination",
+    "unit": "Chemical",
+    "reference": "Negative",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST052",
+    "name": "Microscopy Examination",
+    "category": "Motion Examination",
+    "unit": "Microscopy",
+    "reference": "See individual findings",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST053",
+    "name": "OVA",
+    "category": "Motion Examination",
+    "unit": "/HPF",
+    "reference": "Not Seen / Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST054",
+    "name": "Cyst's",
+    "category": "Motion Examination",
+    "unit": "/HPF",
+    "reference": "Not Seen / Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST055",
+    "name": "Bacteria",
+    "category": "Motion Examination",
+    "unit": "/HPF",
+    "reference": "Normal Flora",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST056",
+    "name": "Others",
+    "category": "Motion Examination",
+    "unit": "Microscopy",
+    "reference": "Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST057",
+    "name": "Semen Analysis",
+    "category": "Semen Analysis",
+    "unit": "Analysis",
+    "reference": "Volume: 2 - 5 mL, Liquefaction: 20-30 min",
+    "price": 350,
+    "status": "Active"
+  },
+  {
+    "id": "TST058",
+    "name": "Collection",
+    "category": "Semen Analysis",
+    "unit": "Observation",
+    "reference": "Complete Specimen",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST059",
+    "name": "Reaction",
+    "category": "Semen Analysis",
+    "unit": "pH",
+    "reference": "Alkaline (7.2 - 8.0)",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST060",
+    "name": "Semen Total Count",
+    "category": "Semen Analysis",
+    "unit": "Million/mL",
+    "reference": "> 15 Million/mL",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST061",
+    "name": "Motile",
+    "category": "Semen Analysis",
+    "unit": "%",
+    "reference": "> 40 % Progressive",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST062",
+    "name": "Non Motile",
+    "category": "Semen Analysis",
+    "unit": "%",
+    "reference": "< 60 %",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST063",
+    "name": "Pus Cells",
+    "category": "Semen Analysis",
+    "unit": "/HPF",
+    "reference": "0 - 2 /HPF",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST064",
+    "name": "Others",
+    "category": "Semen Analysis",
+    "unit": "Observation",
+    "reference": "Nil",
+    "price": 0,
+    "status": "Active"
+  },
+  {
+    "id": "TST065",
+    "name": "Thyroid",
+    "category": "Additional Tests",
+    "unit": "Various",
+    "reference": "TSH: 0.4 - 4.2 µIU/mL, T3/T4: Normal",
+    "price": 500,
+    "status": "Active"
+  },
+  {
+    "id": "TST066",
+    "name": "LFT",
+    "category": "Additional Tests",
+    "unit": "Various",
+    "reference": "Bilirubin: 0.2-1.2, SGOT: 5-40, SGPT: 7-56 U/L",
+    "price": 800,
+    "status": "Active"
+  },
+  {
+    "id": "TST067",
+    "name": "Vitamin D",
+    "category": "Additional Tests",
+    "unit": "ng/mL",
+    "reference": "Sufficiency: 30.0 - 100.0",
+    "price": 1000,
+    "status": "Active"
+  },
+  {
+    "id": "TST068",
+    "name": "Vitamin B12",
+    "category": "Additional Tests",
+    "unit": "pg/mL",
+    "reference": "211 - 911",
+    "price": 1000,
+    "status": "Active"
+  },
+  {
+    "id": "TST069",
+    "name": "Iron",
+    "category": "Additional Tests",
+    "unit": "µg/dL",
+    "reference": "Male: 65 - 175, Female: 50 - 170",
+    "price": 800,
+    "status": "Active"
+  },
+  {
+    "id": "TST070",
+    "name": "CRP",
+    "category": "Additional Tests",
+    "unit": "mg/L",
+    "reference": "< 6.0 mg/L (Normal)",
+    "price": 500,
+    "status": "Active"
+  },
+  {
+    "id": "TST071",
+    "name": "HbA1c",
+    "category": "Additional Tests",
+    "unit": "%",
+    "reference": "Normal: < 5.7%, Diabetic: ≥ 6.5%",
+    "price": 500,
+    "status": "Active"
+  }
+];
+
+export const DEFAULT_BRANCHES = [
+  {
+    "id": "BR001",
+    "name": "Main Branch",
+    "address": "Dr No: 8-200 RAJKUMAR SILKS, Near Raj Kumar Silks Street, Main Road, Tallapudi, Rajahmundry-534341, Andhra Pradesh",
+    "phone": "9440985131",
+    "status": "Active"
+  }
+];
+
+export const DEFAULT_USERS = [
+  {
+    "id": "USR001",
+    "name": "Administrator",
+    "username": "Taz@18",
+    "password": "Sofiya@2010",
+    "role": "Administrator",
+    "status": "Active"
+  },
+  {
+    "id": "USR002",
+    "name": "Lab Technician",
+    "username": "Taz@18",
+    "password": "Sofiya@2010",
+    "role": "Lab Technician",
+    "status": "Active"
+  }
+];
